@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Firefox scrollbar styling */
+/* .app_sidebar {
+  scrollbar-width: thin;
+} */
+
+.app_sidebar::-webkit-scrollbar {
+  width: 1px !important;
+  /* height: 10px; */
+}
+
+.app_sidebar::-webkit-scrollbar-track {
+  border-radius: 10px;
+  /* @apply bg-warning-50; */
+}
+
+.app_sidebar::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  @apply bg-gray-400;
+}
+
+table th {
+  @apply !bg-blue-600 !text-white
+}
+table tbody{
+  @apply !divide-y
+}
