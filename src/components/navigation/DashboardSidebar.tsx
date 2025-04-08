@@ -46,7 +46,7 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
         } transition-transform duration-300 ease-in-out lg:translate-x-0`}
       >
         <div className="relative h-[90%]">
-          <nav className="mt-4 ml-3 flex flex-col max-h-[88%] app_sidebar overflow-y-auto">
+          <nav className="mt-4 ml-3 flex flex-col max-h-[88%] app_sidebar overflow-hidden overflow-y-auto">
             {links.map((link, index) => {
               if ("dropdown" in link) {
                 return (

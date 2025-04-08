@@ -61,7 +61,7 @@ const MyJournalPage = () => {
       .filter((tag) => tag !== "");
   };
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = (files: FileList | File[] |  null) => {
     if (files) {
       console.log("Selected files:", Array.from(files));
       setUploadedFile(Array.from(files));

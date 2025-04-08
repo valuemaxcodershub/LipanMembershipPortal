@@ -20,28 +20,51 @@ export const signUpSchema = yup.object({
   state: yup.string().required("State is required"),
   zip_code: yup.string(),
   phone: yup.string().required("Phone number is required"),
-  email: yup.string().email("Invalid email").required("Email is required"),
+  email: yup.string().required("Email is required").email("Invalid email"),
   areas_of_interest: yup
     .array()
     .min(1, "Please select at least one area of interest"),
   level_of_learners: yup.string().required("Please select a level of learners"),
   password1: yup
     .string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
-  password2: yup
-    .string()
-    .oneOf([yup.ref("password1")], "Passwords must match"),
+    .required("Password is required")
+    .min(6, "Password must be at least 6 characters"),
+  password2: yup.string().oneOf([yup.ref("password1")], "Passwords must match"),
   terms: yup.bool().oneOf([true], "You must accept the terms and conditions"),
 });
 
 export type SignUpSchemaType = yup.InferType<typeof signUpSchema>;
 
- export const resetSchema = yup.object().shape({
-   email: yup
-     .string()
-     .email("Invalid email")
-     .required("Provide your email address here"),
- });
+export const resetSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email("Invalid email")
+    .required("Provide your email address here"),
+});
 
- export type ResetSchemaType = yup.InferType<typeof resetSchema>;
+export type ResetSchemaType = yup.InferType<typeof resetSchema>;
+
+export const contactAttachmentformats = [
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
+export const contactAdminSchema = yup.object().shape({
+  subject: yup.string().required("Subject is required"),
+  email: yup.string().email("Invalid email").required("Email is required"),
+  message: yup.string().required("Message is required"),
+  attachment: yup
+    .mixed()
+    .test("fileSize", "The file is too large", (value: any) => {
+      return value?.[0]?.size <= 5_000_000 || !value?.length;
+    })
+    .test("type", "Only image, pdf or docx allowed", (value: any) => {
+      return (
+        !value?.length || contactAttachmentformats.includes(value?.[0]?.type)
+      );
+    }),
+});
+
+export type ContactAdminSchemaType = yup.InferType<typeof contactAdminSchema>;

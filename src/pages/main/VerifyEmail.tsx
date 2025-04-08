@@ -199,14 +199,14 @@ export default function VerifyWithLinkPage() {
 
           {status === "error" && (
             <div className="flex flex-col items-center space-y-4">
-              <FaTimesCircle className="text-red-500 text-5xl" />
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center">
-                Verification Failed
-              </h2>
               <Alert color="failure" icon={HiInformationCircle}>
                 An error occurred while verifying your account. Please try
                 again.
               </Alert>
+              <FaTimesCircle className="text-red-500 text-5xl" />
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center">
+                Verification Failed
+              </h2>
               <div className="flex items-center gap-2">
                 <Button color="success" onClick={verifyInit}>
                   Retry

@@ -9,6 +9,7 @@ import {
   FiSpeaker,
   FiList,
   FiBriefcase,
+  FiHelpCircle,
 } from "react-icons/fi";
 import { useBreakpoint } from "../hooks/breakpoint";
 import DashboardHeader from "../components/navigation/DashboardHeader";
@@ -61,6 +62,11 @@ function DashboardLayout() {
       name: "Transactions",
       icon: FiList,
       path: "transactions",
+    },
+    {
+      name: "Help & Support",
+      icon: FiHelpCircle,
+      path: "help&support",
     },
     {
       name: " Account & Profile Settings",

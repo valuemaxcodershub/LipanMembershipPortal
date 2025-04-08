@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Button, Card, Label, Modal, TextInput, Select } from "flowbite-react";
+import {
+  Button,
+  Card,
+  Label,
+  Modal,
+  TextInput,
+  Select,
+  Carousel,
+} from "flowbite-react";
 import {
   HiOutlineSearch,
   HiOutlineCalendar,
@@ -49,7 +57,7 @@ const UpcomingEventsPage = () => {
   const [selectedTag, setSelectedTag] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredEvents, setFilteredEvents] = useState(upcomingEvents);
-  const [featuredEvent] = useState(upcomingEvents[0]);
+  const [featuredEvent] = useState(upcomingEvents);
 
   const [viewDetailsModal, setViewDetailsModal] = useState(false);
   const [registerModal, setRegisterModal] = useState(false);
@@ -107,37 +115,43 @@ const UpcomingEventsPage = () => {
               <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                 Featured Event
               </h2>
-              <Card className="bg-blue-100 dark:bg-blue-900">
-                <div className="flex flex-col items-center">
-                  <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-                    {featuredEvent.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                    {featuredEvent.date}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {featuredEvent.location}
-                  </p>
-                  <div className="flex gap-2 mt-4">
-                    {featuredEvent.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-blue-200 text-blue-800 text-xs px-3 py-1 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <Button
-                    className="mt-6"
-                    color="blue"
-                    size="md"
-                    onClick={() => openDetails(featuredEvent)}
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </Card>
+              <div className="h-56 sm:h-64 xl:h-80 2xl:h-96">
+                <Carousel pauseOnHover>
+                  {featuredEvent.map((evnt, index) => (
+                    <Card key={index} className="bg-blue-100 dark:bg-blue-900 max-w-5xl m-auto">
+                      <div className="flex flex-col items-center">
+                        <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
+                          {evnt.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                          {evnt.date}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {evnt.location}
+                        </p>
+                        <div className="flex gap-2 mt-4">
+                          {evnt.tags.map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="bg-blue-200 text-blue-800 text-xs px-3 py-1 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <Button
+                          className="mt-6"
+                          color="blue"
+                          size="md"
+                          onClick={() => openDetails(evnt)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </Carousel>
+              </div>
             </div>
           )}
 

@@ -19,6 +19,7 @@ import UpcomingEventsPage from "./pages/members/UpcomingEvents";
 import TransactionsPage from "./pages/members/Transactions";
 import MyResourcesPage from "./pages/members/Resources";
 import NotificationsPage from "./pages/members/Notifications";
+import ContactAdminsPage from "./pages/members/ContactAdmin";
 
 function AppRoutes() {
   return (
@@ -29,7 +30,10 @@ function AppRoutes() {
       <Route path="/auth" element={<AuthLayout />}>
         <Route path="sign-up" element={<SignUpPage />} />
         <Route path="sign-in" element={<SignInPage />} />
-        <Route path="forgot-password/:uid/:token" element={<ForgotPasswordPage />} />
+        <Route
+          path="forgot-password/:uid/:token"
+          element={<ForgotPasswordPage />}
+        />
         <Route path="verify-email/:token" element={<EmailVerificationPage />} />
       </Route>
       <Route path="/getting-started" element={<PricingPage />} />
@@ -44,6 +48,7 @@ function AppRoutes() {
         <Route path="upcoming-events" element={<UpcomingEventsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="help&support" element={<ContactAdminsPage />} />
         <Route path="profile" element={<ProfileAndSettings />} />
       </Route>
     </Routes>

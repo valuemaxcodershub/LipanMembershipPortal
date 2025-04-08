@@ -2,27 +2,29 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
-import { TextInput, Button, Tooltip } from "flowbite-react";
+import { TextInput, Button, Tooltip, Alert } from "flowbite-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Logo } from "../../components/UI/Logo";
 import axios from "../../config/axios";
 import Buttonloader from "../../components/UI/Buttonloader";
 import { ForgotPassword } from "../../utils/api/auth";
+import { HiInformationCircle } from "react-icons/hi";
+import { toast } from "react-toastify";
 
 const schema = yup.object({
   new_password1: yup
     .string()
-    .min(8, "This field should be at least 8 characters")
-    .required("This field is required"),
+    .required("This field is required")
+    .min(8, "This field should be at least 8 characters"),
   new_password2: yup
     .string()
-    .oneOf([yup.ref("new_password1")], "Passwords must match")
-    .required("This field is required"),
+    .required("This field is required")
+    .oneOf([yup.ref("new_password1")], "Passwords must match"),
 });
 
 function ForgotPasswordPage() {
-  const {uid, token} = useParams()
+  const { uid, token } = useParams();
   const {
     register,
     handleSubmit,
@@ -32,22 +34,23 @@ function ForgotPasswordPage() {
   });
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [togglePassword1, setTogglePassword1] = useState<boolean>(false);
   const [togglePassword2, setTogglePassword2] = useState<boolean>(false);
 
   const onSubmit = async (formData: any) => {
     setLoading(true);
-    setSuccessMessage("");
     setErrorMessage("");
     try {
-      const { data } = await ForgotPassword({...formData, uid, token});
-      setSuccessMessage(
-        data.detail || "Password reset instructions have been sent to your email."
+      const { data } = await ForgotPassword({ ...formData, uid, token });
+      toast.success(
+        data.detail ||
+          "Password reset instructions have been sent to your email."
       );
     } catch (error: any) {
-      setErrorMessage(error.message || "Failed to send reset instructions. Please try again.");
+      setErrorMessage(
+        error.message || "Failed to send reset instructions. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -63,19 +66,17 @@ function ForgotPasswordPage() {
           Forgot Password
         </h1>
         <p className="mb-6 text-center text-gray-600">
-          Enter your email address below and we will send you instructions to
-          reset your password.
+          Enter your New Password below to complete reset.
         </p>
-        {successMessage && (
-          <p className="text-green-600 text-center mb-4">{successMessage}</p>
-        )}
         {errorMessage && (
-          <p className="text-red-600 text-center mb-4">{errorMessage}</p>
+          <Alert color="failure" icon={HiInformationCircle}>
+            {errorMessage}
+          </Alert>
         )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-600">
-              Password
+              New Password
             </label>
             <div className="relative">
               <TextInput
@@ -111,7 +112,7 @@ function ForgotPasswordPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600">
-              Password
+              Confirm New Password
             </label>
             <div className="relative">
               <TextInput
@@ -152,7 +153,7 @@ function ForgotPasswordPage() {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            <Buttonloader isLoading={loading} title="Send Reset Link" />
+            <Buttonloader isLoading={loading} title="Reset Password" />
           </Button>
 
           {/* Back to Login */}
