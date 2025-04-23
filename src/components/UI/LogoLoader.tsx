@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 function SpinnerLogo (){
   return (
-    <div className="flex items-center justify-center relative size-28">
+    <div className="flex items-center justify-center relative size-28 dark:bg-white rounded-full">
       {/* Inner Logo */}
       <div
         className="absolute w-full h-28 font-bold flex items-center justify-center rounded-full"

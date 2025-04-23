@@ -118,7 +118,7 @@ export default function VerifyWithLinkPage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [status, setStatus] = useState(""); // loading, success, error, expired
+  const [status, setStatus] = useState("waiting"); // loading,waiting, success, error, expired
   // const [userEmail, setUserEmail] = useState("");
   const [retry, setRetry] = useState(0);
 
@@ -146,9 +146,9 @@ export default function VerifyWithLinkPage() {
       setStatus("error");
     }
   }
-  useEffect(() => {
-    verifyInit();
-  }, []);
+  // useEffect(() => {
+  //   verifyInit();
+  // }, []);
 
   const handleResendVerification = async () => {
     try {
@@ -169,15 +169,22 @@ export default function VerifyWithLinkPage() {
         <title>Verify Account</title>
       </PageMeta>
 
-      <div className="h-full flex flex-col items-center justify-center ">
+      <div className="flex flex-col items-center justify-center">
         <Logo className="bg-blue-600 p-2 h-16 rounded-xl mb-4" />
         <Card className="w-full max-w-md shadow-lg rounded-xl">
-          {status === "loading" && (
+          {(status === "waiting" || status === "loading") && (
             <div className="flex flex-col items-center space-y-4 text-center">
-              <Spinner size="xl" color="info" />
+              {status === "loading" && <Spinner size="xl" color="info" />}
               <p className="text-lg font-medium text-gray-800 dark:text-white">
-                Verifying your account...
+                {status === "loading"
+                  ? "Verifying your account..."
+                  : "Verify your account"}
               </p>
+              {status === "waiting" && (
+                <Button color="blue" onClick={verifyInit}>
+                  Verify
+                </Button>
+              )}
             </div>
           )}
 

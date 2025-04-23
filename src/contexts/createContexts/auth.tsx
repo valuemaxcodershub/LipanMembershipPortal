@@ -3,7 +3,7 @@ import { createContext } from "react";
 export interface UserType {
   id: string;
   profile_pic: string;
-  fullName: string;
+  full_name: string;
   email: string;
   phone: string;
   is_admin: boolean;

@@ -102,9 +102,9 @@ const ProfileSettingsPage = () => {
   const toggleCaptureModal = () => setShowCaptureModal((prev) => !prev); 
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
       <h2 className="text-3xl font-semibold text-gray-800 dark:text-white mb-2">
-        Account Settings
+        Profile & Account Settings
       </h2>
 
       <div className="grid grid-cols-1 gap-6">
@@ -133,7 +133,7 @@ const ProfileSettingsPage = () => {
                   <TextInput
                     icon={HiOutlineUser}
                     {...register("full_name")}
-                    color={errors.full_name ? "failure" : ""}
+                    color={errors.full_name ? "failure" : undefined}
                     helperText={errors.full_name?.message}
                   />
                 </div>
@@ -141,7 +141,7 @@ const ProfileSettingsPage = () => {
                   <Label value="Title" />
                   <Select
                     {...register("title")}
-                    color={errors.title ? "failure" : ""}
+                    color={errors.title ? "failure" : undefined}
                     helperText={errors.title?.message}
                   >
                     <option value="">Select Title</option>
@@ -154,7 +154,7 @@ const ProfileSettingsPage = () => {
                   <Label value="Gender" />
                   <Select
                     {...register("gender")}
-                    color={errors.gender ? "failure" : ""}
+                    color={errors.gender ? "failure" : undefined}
                     helperText={errors.gender?.message}
                   >
                     <option value="">Select Gender</option>
@@ -173,7 +173,7 @@ const ProfileSettingsPage = () => {
                   icon={HiOutlineMail}
                   type="email"
                   {...register("email")}
-                  color={errors.email ? "failure" : ""}
+                  color={errors.email ? "failure" : undefined}
                   helperText={errors.email?.message}
                 />
               </div>
@@ -182,7 +182,7 @@ const ProfileSettingsPage = () => {
                 <TextInput
                   icon={HiOutlinePhone}
                   {...register("phone")}
-                  color={errors.phone ? "failure" : ""}
+                  color={errors.phone ? "failure" : undefined}
                   helperText={errors.phone?.message}
                 />
               </div>
@@ -193,7 +193,7 @@ const ProfileSettingsPage = () => {
               <TextInput
                 icon={HiOutlineOfficeBuilding}
                 {...register("organization")}
-                color={errors.organization ? "failure" : ""}
+                color={errors.organization ? "failure" : undefined}
                 helperText={errors.organization?.message}
               />
             </div>
@@ -201,10 +201,9 @@ const ProfileSettingsPage = () => {
             <div>
               <Label value="Mailing Address" />
               <Textarea
-                rows={2}
-                // icon={HiOutlineLocationMarker}
+                rows={6}
                 {...register("mailing_address")}
-                color={errors.mailing_address ? "failure" : ""}
+                color={errors.mailing_address ? "failure" : undefined}
                 helperText={errors.mailing_address?.message}
               />
             </div>
@@ -214,7 +213,7 @@ const ProfileSettingsPage = () => {
                 <Label value="City" />
                 <TextInput
                   {...register("city")}
-                  color={errors.city ? "failure" : ""}
+                  color={errors.city ? "failure" : undefined}
                   helperText={errors.city?.message}
                 />
               </div>
@@ -222,7 +221,7 @@ const ProfileSettingsPage = () => {
                 <Label value="State" />
                 <TextInput
                   {...register("state")}
-                  color={errors.state ? "failure" : ""}
+                  color={errors.state ? "failure" : undefined}
                   helperText={errors.state?.message}
                 />
               </div>
@@ -230,7 +229,7 @@ const ProfileSettingsPage = () => {
                 <Label value="ZIP Code" />
                 <TextInput
                   {...register("zip_code")}
-                  color={errors.zip_code ? "failure" : ""}
+                  color={errors.zip_code ? "failure" : undefined}
                   helperText={errors.zip_code?.message}
                 />
               </div>
@@ -240,7 +239,7 @@ const ProfileSettingsPage = () => {
               <Label value="Level of Learners" />
               <Select
                 {...register("level_of_learners")}
-                color={errors.level_of_learners ? "failure" : ""}
+                color={errors.level_of_learners ? "failure" : undefined}
                 helperText={errors.level_of_learners?.message}
               >
                 <option value="">Select Level</option>
@@ -253,10 +252,9 @@ const ProfileSettingsPage = () => {
             <div>
               <Label value="Short Bio / About You" />
               <Textarea
-                rows={3}
-                // icon={HiOutlineBriefcase}
+                rows={10}
                 {...register("bio")}
-                color={errors.bio ? "failure" : ""}
+                color={errors.bio ? "failure" : undefined}
                 helperText={errors.bio?.message}
               />
             </div>
@@ -283,10 +281,9 @@ const ProfileSettingsPage = () => {
                 type="password"
                 icon={HiLockClosed}
                 {...registerPassword("password")}
+                color={passwordErrors.password ? "failure" : undefined}
+                helperText={passwordErrors.password?.message}
               />
-              <p className="text-red-500 text-sm">
-                {passwordErrors.password?.message}
-              </p>
             </div>
             <div>
               <Label value="Confirm Password" />
@@ -294,10 +291,9 @@ const ProfileSettingsPage = () => {
                 type="password"
                 icon={HiLockClosed}
                 {...registerPassword("confirm_password")}
+                color={passwordErrors.confirm_password ? "failure" : undefined}
+                helperText={passwordErrors.confirm_password?.message}
               />
-              <p className="text-red-500 text-sm">
-                {passwordErrors.confirm_password?.message}
-              </p>
             </div>
 
             <Button color="blue" type="submit" fullSized>

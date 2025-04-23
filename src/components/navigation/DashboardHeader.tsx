@@ -3,9 +3,11 @@ import { Logo } from "../UI/Logo";
 import { Avatar, DarkThemeToggle, Dropdown } from "flowbite-react";
 import { BiMenu } from "react-icons/bi";
 import { useAuth } from "../../hooks/auth";
+import { getInitails } from "../../utils/app/text";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
-  const {user} = useAuth()
+  const { user, logout } = useAuth()
+ 
   return (
     <>
       <header className="fixed z-40 flex h-16 w-full items-center justify-between bg-blue-700 px-6 lg:px-14 shadow-md">
@@ -23,8 +25,8 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
           <Dropdown
             label={
               <Avatar
-                img={undefined}
-                placeholderInitials={`${user?.fullName.split(" ")[0][0]}${user?.fullName.split(" ")[1][0]}`}
+                img={user?.profile_pic ||undefined}
+                placeholderInitials={getInitails(user?.full_name || "")}
                 color={"purple"}
                 rounded
               />
@@ -34,7 +36,7 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
             className="!min-w-[200px]"
           >
             <Dropdown.Header>
-              <span className="block text-sm">{user?.fullName}</span>
+              <span className="block text-sm">{user?.full_name}</span>
               <span className="block truncate text-sm font-medium">
                 {user?.email}
               </span>
@@ -45,14 +47,14 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
             <Dropdown.Divider />
             <Dropdown.Item>
               <button
-                // onClick={openLogoutModal}
+                onClick={logout}
                 className="w-full flex items-center px-4 py-2 text-white bg-[#ff0000] rounded-md"
               >
                 <FiLogOut className="mr-3" size={20} /> Logout
               </button>
             </Dropdown.Item>
           </Dropdown>
-          <DarkThemeToggle  />
+          <DarkThemeToggle/>
         </div>
       </header>
     </>

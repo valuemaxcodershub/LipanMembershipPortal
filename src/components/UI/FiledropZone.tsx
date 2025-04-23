@@ -51,9 +51,7 @@ export const FileDropzone = ({
   return (
     <div className="w-full space-y-2">
       {label && (
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          {label}
-        </span>
+        <Label value={label}/>
       )}
       <div className="flex w-full items-center justify-center">
         <Label

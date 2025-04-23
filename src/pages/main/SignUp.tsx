@@ -14,7 +14,15 @@ import {
   FiBook,
   FiLock,
 } from "react-icons/fi";
-import { TextInput, Button, Select, Checkbox, Tooltip, Card } from "flowbite-react";
+import {
+  TextInput,
+  Button,
+  Select,
+  Checkbox,
+  Tooltip,
+  Card,
+  Label,
+} from "flowbite-react";
 import { createElement, useState } from "react";
 import { Logo } from "../../components/UI/Logo";
 import SpinnerLogo from "../../components/UI/LogoLoader";
@@ -22,17 +30,18 @@ import { signUpSchema, SignUpSchemaType } from "../../schemas/mainauth";
 import { Register } from "../../utils/api/auth";
 import { toast } from "react-toastify";
 import { useApp } from "../../hooks/app";
-
-
+import { Link, useNavigate } from "react-router-dom";
 
 function MultiSectionForm() {
-  const {areasOfInterest, levelOfLearners} = useApp();
+  const { areasOfInterest, levelOfLearners } = useApp();
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
     trigger,
     watch,
+    reset,
   } = useForm<SignUpSchemaType>({
     resolver: yupResolver(signUpSchema),
     mode: "onChange",
@@ -51,11 +60,9 @@ function MultiSectionForm() {
       fields: (
         <>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Title
-            </label>
+            <Label value="Title" />
             <Select
-              color={errors.title ? "failure" : ""}
+              color={errors.title ? "failure" : undefined}
               {...register("title")}
               helperText={errors.title?.message}
             >
@@ -68,23 +75,19 @@ function MultiSectionForm() {
             </Select>
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Full Name
-            </label>
+            <Label value="Full Name" />
             <TextInput
               {...register("full_name")}
               placeholder="Enter your fullname"
               icon={FiUser}
-              color={errors.full_name ? "failure" : ""}
+              color={errors.full_name ? "failure" : undefined}
               helperText={errors.full_name?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Gender
-            </label>
+            <Label value="Gender" />
             <Select
-              color={errors.gender ? "failure" : ""}
+              color={errors.gender ? "failure" : undefined}
               {...register("gender")}
               helperText={errors.gender?.message}
             >
@@ -94,14 +97,12 @@ function MultiSectionForm() {
             </Select>
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Organization
-            </label>
+            <Label value="Organization" />
             <TextInput
               {...register("organization")}
               placeholder="Organization name"
               icon={FiUser}
-              color={errors.organization ? "failure" : ""}
+              color={errors.organization ? "failure" : undefined}
               helperText={errors.organization?.message}
             />
           </div>
@@ -114,46 +115,38 @@ function MultiSectionForm() {
       fields: (
         <>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Mailing Address
-            </label>
+            <Label value="Mailing Address" />
             <TextInput
               {...register("mailing_address")}
               placeholder="Mailing Address"
-              color={errors.mailing_address ? "failure" : ""}
+              color={errors.mailing_address ? "failure" : undefined}
               helperText={errors.mailing_address?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              City
-            </label>
+            <Label value="City" />
             <TextInput
               {...register("city")}
               placeholder="City"
-              color={errors.city ? "failure" : ""}
+              color={errors.city ? "failure" : undefined}
               helperText={errors.city?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              State
-            </label>
+            <Label value="State" />
             <TextInput
               {...register("state")}
               placeholder="State"
-              color={errors.state ? "failure" : ""}
+              color={errors.state ? "failure" : undefined}
               helperText={errors.state?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              ZIP Code
-            </label>
+            <Label value="ZIP Code" />
             <TextInput
               {...register("zip_code")}
               placeholder="ZIP Code"
-              color={errors.zip_code ? "failure" : ""}
+              color={errors.zip_code ? "failure" : undefined}
               helperText={errors.zip_code?.message}
             />
           </div>
@@ -166,26 +159,22 @@ function MultiSectionForm() {
       fields: (
         <>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Phone
-            </label>
+            <Label value="Phone" />
             <TextInput
               {...register("phone")}
               placeholder="Phone"
               icon={FiPhone}
-              color={errors.phone ? "failure" : ""}
+              color={errors.phone ? "failure" : undefined}
               helperText={errors.phone?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Email
-            </label>
+            <Label value="Email" />
             <TextInput
               {...register("email")}
               placeholder="Email"
               icon={FiMail}
-              color={errors.email ? "failure" : ""}
+              color={errors.email ? "failure" : undefined}
               helperText={errors.email?.message}
             />
           </div>
@@ -214,7 +203,7 @@ function MultiSectionForm() {
                   {...register("areas_of_interest")}
                   className="peer rounded-md"
                 />
-                <p className="cursor-pointer group peer-checked:text-blue-600">
+                <p className="cursor-pointer group dark:text-white peer-checked:text-blue-600">
                   {interest.name}
                 </p>
               </label>
@@ -233,13 +222,11 @@ function MultiSectionForm() {
       icon: FiBook,
       fields: (
         <div className="my-6">
-          <label className="block text-sm font-medium text-gray-600">
-            Level of Learners
-          </label>
+          <Label value="Level of Learners" />
           <Select
             {...register("level_of_learners")}
             helperText={errors.level_of_learners?.message}
-            color={errors.level_of_learners ? "failure" : ""}
+            color={errors.level_of_learners ? "failure" : undefined}
           >
             <option value="">---Select---</option>
             {levelOfLearners.map((option, index) => (
@@ -257,28 +244,24 @@ function MultiSectionForm() {
       fields: (
         <>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600">
-              Password
-            </label>
+            <Label value="Password" />
             <TextInput
               {...register("password1")}
               type="password"
               placeholder="Password"
               icon={FiLock}
-              color={errors.password1 ? "failure" : ""}
+              color={errors.password1 ? "failure" : undefined}
               helperText={errors.password1?.message}
             />
           </div>
           <div className="my-6">
-            <label className="block text-sm font-medium text-gray-600 mt-4">
-              Confirm Password
-            </label>
+            <Label value="Confirm Password" />
             <TextInput
               {...register("password2")}
               type="password"
               placeholder="Confirm Password"
               icon={FiLock}
-              color={errors.password2 ? "failure" : ""}
+              color={errors.password2 ? "failure" : undefined}
               helperText={errors.password2?.message}
             />
           </div>
@@ -286,7 +269,7 @@ function MultiSectionForm() {
             <Checkbox
               id="terms"
               {...register("terms")}
-              color={errors.terms ? "failure" : ""}
+              color={errors.terms ? "failure" : undefined}
             />
             <label
               htmlFor="terms"
@@ -316,10 +299,12 @@ function MultiSectionForm() {
     try {
       const { data } = await Register(formData);
       console.log(data);
-        toast.success(data.detail);
+      toast.success(data.detail);
+      reset();
+      navigate(`/registration-success/${formData.email}`);
     } catch (error: any) {
       console.log(error);
-      toast.error(error.message)
+      toast.error(error.message);
     } finally {
       setSectionLoading(false);
     }
@@ -352,18 +337,16 @@ function MultiSectionForm() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="bg-blue-700 p-3 rounded-xl h-20 my-6">
-        <Logo className="h-full" />
-      </div>
-      <Card className="relative w-full max-w-4xl overflow-hidden rounded-lg p-10 shadow-lg">
+    <div className="grid grid-cols-1 place-items-center">
+      <Logo className="bg-blue-700 p-3 rounded-xl h-16 my-6" />
+      <Card className="relative w-full max-w-4xl overflow-hidden  rounded-lg p-3 shadow-lg">
         {sectionLoading && (
           <div className="absolute inset-0 z-30 flex size-full items-center justify-center bg-slate-950/10">
             <SpinnerLogo />
           </div>
         )}
         {/* Progress Bar */}
-        <div className="mb-9 hidden lg:flex items-center justify-between gap-4 ">
+        <div className="mb-3 hidden lg:flex items-center justify-between ">
           {sections.map((s, index) => (
             <motion.div
               key={index}
@@ -375,7 +358,7 @@ function MultiSectionForm() {
                     : "text-gray-400"
               }`}
               animate={{
-                scale: index === section ? 1.3 : 1,
+                scale: index === section ? 1.1 : 0.8999,
               }}
               transition={{ duration: 0.3 }}
             >
@@ -389,12 +372,12 @@ function MultiSectionForm() {
                 }`}
               >
                 {index < section ? (
-                  <FiCheckCircle size={20} />
+                  <FiCheckCircle size={15} />
                 ) : (
-                  <s.icon size={20} />
+                  <s.icon size={15} />
                 )}
               </div>
-              <span className="mt-1 text-sm">{s.label}</span>
+              <span className="mt-1 text-xs">{s.label}</span>
             </motion.div>
           ))}
         </div>
@@ -410,7 +393,10 @@ function MultiSectionForm() {
         </div>
 
         {/* Section Fields */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6 over-hidden"
+        >
           <motion.div
             key={section}
             initial={{ opacity: 0, x: 100 }}
@@ -450,6 +436,18 @@ function MultiSectionForm() {
                 Submit
               </Button>
             )}
+          </div>
+
+          <div className="mt-4 flex justify-center text-sm text-gray-600 border-t border-gray-300 dark:border-gray-700 pt-3">
+            <span className="flex gap-2 dark:text-gray-200">
+              Already have an account?
+              <Link
+                to="/auth/sign-in"
+                className="text-blue-600 dark:text-blue-500 underline"
+              >
+                Sign In
+              </Link>
+            </span>
           </div>
         </form>
       </Card>

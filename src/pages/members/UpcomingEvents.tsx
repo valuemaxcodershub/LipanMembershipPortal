@@ -22,6 +22,7 @@ const upcomingEvents = [
     tags: ["Workshop", "Volunteer"],
     description:
       "A hands-on workshop for volunteers to learn how to coordinate community service activities effectively.",
+      is_featured: true,
   },
   {
     id: 2,
@@ -31,6 +32,7 @@ const upcomingEvents = [
     tags: ["Seminar", "Tech"],
     description:
       "Explore the latest in tech innovation and how it's transforming the world.",
+      is_featured: false,
   },
   {
     id: 3,
@@ -40,6 +42,7 @@ const upcomingEvents = [
     tags: ["Training", "Leadership"],
     description:
       "Develop leadership skills with experts and unlock your true potential.",
+      is_featured: true,
   },
 ];
 
@@ -100,7 +103,7 @@ const UpcomingEventsPage = () => {
   return (
     <>
       <div className="">
-        <main className="pt-6 pb-8 px-4">
+        <div className="pt-6 pb-8 px-4">
           <div className="mb-6">
             <h1 className="text-3xl font-semibold text-gray-800 dark:text-white">
               Upcoming Events
@@ -178,7 +181,7 @@ const UpcomingEventsPage = () => {
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter") handleSearch();
                 }}
               />
@@ -243,7 +246,7 @@ const UpcomingEventsPage = () => {
               </div>
             )}
           </div>
-        </main>
+        </div>
       </div>
 
       {/* View Details Modal */}

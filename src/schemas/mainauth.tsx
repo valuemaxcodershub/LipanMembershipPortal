@@ -44,6 +44,22 @@ export const resetSchema = yup.object().shape({
 
 export type ResetSchemaType = yup.InferType<typeof resetSchema>;
 
+export const resetPasswordSchema = yup.object({
+  new_password1: yup
+    .string()
+    .required("This field is required")
+    .min(8, "This field should be at least 8 characters"),
+  new_password2: yup
+    .string()
+    .required("This field is required")
+    .oneOf([yup.ref("new_password1")], "Passwords must match"),
+});
+
+export type ResetPasswordSchemaType = yup.InferType<typeof resetPasswordSchema>
+
+
+// Member Dashboard
+
 export const contactAttachmentformats = [
   "image/jpeg",
   "image/png",

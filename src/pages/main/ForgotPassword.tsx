@@ -1,36 +1,27 @@
 import { useForm } from "react-hook-form";
-import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
-import { TextInput, Button, Tooltip, Alert } from "flowbite-react";
+import { FiEye, FiEyeOff, FiLock } from "react-icons/fi";
+import { TextInput, Button, Tooltip, Alert, Card } from "flowbite-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Logo } from "../../components/UI/Logo";
-import axios from "../../config/axios";
 import Buttonloader from "../../components/UI/Buttonloader";
-import { ForgotPassword } from "../../utils/api/auth";
+import { ResetPassword } from "../../utils/api/auth";
 import { HiInformationCircle } from "react-icons/hi";
 import { toast } from "react-toastify";
+import { resetPasswordSchema, ResetPasswordSchemaType } from "../../schemas/mainauth";
 
-const schema = yup.object({
-  new_password1: yup
-    .string()
-    .required("This field is required")
-    .min(8, "This field should be at least 8 characters"),
-  new_password2: yup
-    .string()
-    .required("This field is required")
-    .oneOf([yup.ref("new_password1")], "Passwords must match"),
-});
+
 
 function ForgotPasswordPage() {
   const { uid, token } = useParams();
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
+  } = useForm<ResetPasswordSchemaType>({
+    resolver: yupResolver(resetPasswordSchema),
   });
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -38,38 +29,36 @@ function ForgotPasswordPage() {
   const [togglePassword1, setTogglePassword1] = useState<boolean>(false);
   const [togglePassword2, setTogglePassword2] = useState<boolean>(false);
 
-  const onSubmit = async (formData: any) => {
+  const onSubmit = async (formData: ResetPasswordSchemaType) => {
     setLoading(true);
     setErrorMessage("");
     try {
-      const { data } = await ForgotPassword({ ...formData, uid, token });
+      console.log({ ...formData, uid, token });
+      const { data } = await ResetPassword({ ...formData, uid, token });
       toast.success(
         data.detail ||
           "Password reset instructions have been sent to your email."
       );
+      navigate("/auth/sign-in")
     } catch (error: any) {
-      setErrorMessage(
-        error.message || "Failed to send reset instructions. Please try again."
-      );
+      setErrorMessage(error.message || "Failed to reset. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center bg-gray-100 min-h-screen p-6">
-      <div className="bg-blue-700 p-3 rounded-xl h-20 my-6">
-        <Logo className="h-full" />
-      </div>
-      <div className="w-full max-w-md rounded-lg bg-white p-10 shadow-lg">
-        <h1 className="mb-8 text-center text-3xl font-semibold text-gray-800">
+    <div className="flex flex-col items-center justify-center">
+      <Logo className="bg-blue-700 p-3 rounded-xl h-16 my-6" />
+      <Card className="w-full max-w-md p-3 shadow-lg">
+        <h1 className="mb-8 text-center text-3xl font-semibold text-gray-800 dark:text-white">
           Forgot Password
         </h1>
         <p className="mb-6 text-center text-gray-600">
           Enter your New Password below to complete reset.
         </p>
         {errorMessage && (
-          <Alert color="failure" icon={HiInformationCircle}>
+          <Alert color="failure" icon={HiInformationCircle} onDismiss={()=> setErrorMessage("")}>
             {errorMessage}
           </Alert>
         )}
@@ -156,15 +145,15 @@ function ForgotPasswordPage() {
             <Buttonloader isLoading={loading} title="Reset Password" />
           </Button>
 
-          {/* Back to Login */}
+          {/* Back to Login
           <div className="mt-4 text-center text-sm text-gray-600">
             Remembered your password?{" "}
             <Link to="/auth/sign-in" className="text-blue-600 underline">
               Sign In
             </Link>
-          </div>
+          </div> */}
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

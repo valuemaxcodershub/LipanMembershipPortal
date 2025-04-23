@@ -28,3 +28,15 @@ table th {
 table tbody{
   @apply !divide-y
 }
+div[role="tablist"]{
+  @apply rounded-xl
+}
+div[role="tablist"] > button:first-child{
+  @apply rounded-tl-xl rounded-bl-xl
+}
+div[role="tablist"] > button:last-child{
+  @apply rounded-tr-xl rounded-br-xl
+}
+button[role="tab"].active{
+  @apply !bg-blue-600 !text-white
+}

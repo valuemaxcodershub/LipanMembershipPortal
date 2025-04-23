@@ -4,19 +4,19 @@ export function errorHandler(error: any) {
     return "Network error. Please check your internet connection.";
   }
   console.error("Axios error:", error.response?.data);
+  let errorMessage = "";
   if (error.response?.data && typeof error.response.data === "object") {
-    let errorMessage = "Errors:\n";
     for (const key in error.response.data) {
       if (Array.isArray(error.response.data[key])) {
         errorMessage += `${key}: ${error.response.data[key].join(", ")} \n\n`;
       }
     }
-    console.log(errorMessage)
-    return errorMessage;
   }
-  return (
+  const errorResponse =
     error.response?.data?.message ||
     error.response?.data?.detail ||
-    error.message
-  );
+    error.message;
+
+  errorMessage = errorMessage.trim() ? errorMessage : errorResponse;
+  return errorMessage;
 }

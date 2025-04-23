@@ -1,30 +1,88 @@
-# React + TypeScript + Vite
+# Literacy Promotion Association of Nigeria (LiPAN)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend application for the Literacy Promotion Association of Nigeria (LiPAN), built using React, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+LiPAN is dedicated to promoting literacy and sustainable development in Nigeria. This application serves as a portal for members to access resources, manage memberships, and participate in events.
 
-## Expanding the ESLint configuration
+## Environment Variables
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+The application requires the following environment variables to be set up for both development and production:
 
-- Configure the top-level `parserOptions` property like this:
+- `VITE_API_URL`: The base URL for the API.
+- `VITE_FLUTTERWAVE_PUBLIC_KEY`: The public key for Flutterwave integration.
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
-    project: ["./tsconfig.json", "./tsconfig.node.json"],
-    tsconfigRootDir: __dirname,
-  },
-};
+### Example `.env.development` File for Development
+
+```
+VITE_API_URL=http://localhost:3000
+VITE_FLUTTERWAVE_PUBLIC_KEY=your-flutterwave-public-key
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+### Example `.env.production` File for Production
+
+```
+VITE_API_URL=https://api.lipanonline.org
+VITE_FLUTTERWAVE_PUBLIC_KEY=your-flutterwave-public-key
+```
+
+## Getting Started
+
+Follow these steps to set up and run the application:
+
+1. **Clone the Repository**:
+   ```bash
+   git clone <repository-url>
+   cd lipan_frontend
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Set Up Environment Variables**:
+   Create a `.env` file in the root directory and add the required variables as shown above.
+
+4. **Run the Application**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Build for Production**:
+   ```bash
+   npm run build
+   ```
+
+6. **Preview Production Build**:
+   ```bash
+   npm run preview
+   ```
+
+## Features
+
+- Member registration and login
+- Access to literacy resources
+- Event management and participation
+- Membership management
+- Secure payment integration using Flutterwave
+
+## Technologies Used
+
+- **React**: For building the user interface.
+- **TypeScript**: For type-safe development.
+- **Vite**: For fast development and build tooling.
+- **Flowbite**: For UI components.
+- **React Router**: For routing.
+- **React Hook Form**: For form handling.
+- **Yup**: For schema validation.
+- **Tailwind CSS**: For styling.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request for review.
+
+## License
+
+This project is licensed under the MIT License.

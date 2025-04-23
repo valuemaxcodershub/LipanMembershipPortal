@@ -7,7 +7,7 @@ import PaymentProvider from "./contexts/PaymentContext.tsx";
 import AppContextProvider from "./contexts/AppContext.tsx";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  <>
     <AppContextProvider>
       <AuthContextProvider>
         <PaymentProvider>
@@ -15,5 +15,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         </PaymentProvider>
       </AuthContextProvider>
     </AppContextProvider>
-  </React.StrictMode>
+  </>
 );
