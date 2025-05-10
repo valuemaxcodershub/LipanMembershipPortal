@@ -36,6 +36,7 @@ import NotificationAnnouncementPage from "./pages/admin/Notifications&Announceme
 import AdminContactMessagesPage from "./pages/admin/UserContact&Reports";
 import PortalSettingsPage from "./pages/admin/PortalSettings";
 import AdminLoginPage from "./pages/admin/Login";
+import ViewUserPage from "./pages/admin/ViewUser";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -114,6 +115,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="memberships" element={<AdminMembershipPlansPage />} />
         <Route path="manage-users" element={<UserManagementPage />} />
+        <Route path="manage-users/:userId/view" element={<ViewUserPage />} />
         <Route path="events" element={<AdminEventsPage />} />
         <Route path="manage-journals" element={<ManageJournalsPage />} />
         <Route

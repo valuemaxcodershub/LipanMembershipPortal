@@ -16,7 +16,7 @@ axios.interceptors.request.use(
       if (isTokenExpired(token.access)) {
         Cookies.remove("token");
         Cookies.remove("user");
-        window.location.href = user.is_admin ? "/admin-panel/auth":"/auth/sign-in";
+        window.location.href = user.is_admin ? "/admin/login":"/auth/sign-in";
       } else {
         config.headers.Authorization = `Bearer ${token.access}`;
       }
@@ -36,7 +36,11 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       // Token is invalid or expired
+          const user: UserType = JSON.parse(Cookies.get("user") || "null");
+
       Cookies.remove("token");
+      Cookies.remove("user");
+        window.location.href = user.is_admin ? "/admin/login":"/auth/sign-in";
       // Optionally, redirect to login page or show a message
     }
     return Promise.reject(error);

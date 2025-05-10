@@ -10,7 +10,7 @@ function RegistrationSuccessPage() {
   }
   return (
     <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4">
-      <Card className="max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+      <Card className="max-w-md w-full ">
         <div className="flex flex-col items-center text-center">
           <FiCheckCircle className="text-green-500 dark:text-green-400 text-5xl mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
@@ -22,14 +22,14 @@ function RegistrationSuccessPage() {
           </p>
           <FiMail className="text-blue-600 dark:text-blue-400 text-4xl mb-4" />
 
-          <Button
+          {/* <Button
             as={Link}
             to="/auth/sign-in"
             color="blue"
             className="w-full mt-2"
           >
             Go to Login
-          </Button>
+          </Button> */}
         </div>
       </Card>
     </div>

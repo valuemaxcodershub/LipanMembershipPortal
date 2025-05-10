@@ -13,6 +13,8 @@ import {
   HiOutlineCalendar,
   HiOutlineLocationMarker,
 } from "react-icons/hi";
+import { PageMeta } from "../../utils/app/pageMetaValues";
+
 const upcomingEvents = [
   {
     id: 1,
@@ -22,7 +24,7 @@ const upcomingEvents = [
     tags: ["Workshop", "Volunteer"],
     description:
       "A hands-on workshop for volunteers to learn how to coordinate community service activities effectively.",
-      is_featured: true,
+    is_featured: true,
   },
   {
     id: 2,
@@ -32,7 +34,7 @@ const upcomingEvents = [
     tags: ["Seminar", "Tech"],
     description:
       "Explore the latest in tech innovation and how it's transforming the world.",
-      is_featured: false,
+    is_featured: false,
   },
   {
     id: 3,
@@ -42,7 +44,7 @@ const upcomingEvents = [
     tags: ["Training", "Leadership"],
     description:
       "Develop leadership skills with experts and unlock your true potential.",
-      is_featured: true,
+    is_featured: true,
   },
 ];
 
@@ -102,6 +104,13 @@ const UpcomingEventsPage = () => {
 
   return (
     <>
+      <PageMeta>
+        <title>Upcoming Events | LIPAN</title>
+        <meta
+          name="description"
+          content="Explore and register for upcoming events in your area or online."
+        />
+      </PageMeta>
       <div className="">
         <div className="pt-6 pb-8 px-4">
           <div className="mb-6">
@@ -121,7 +130,10 @@ const UpcomingEventsPage = () => {
               <div className="h-56 sm:h-64 xl:h-80 2xl:h-96">
                 <Carousel pauseOnHover>
                   {featuredEvent.map((evnt, index) => (
-                    <Card key={index} className="bg-blue-100 dark:bg-blue-900 max-w-5xl m-auto">
+                    <Card
+                      key={index}
+                      className="bg-blue-100 dark:bg-blue-900 max-w-5xl m-auto"
+                    >
                       <div className="flex flex-col items-center">
                         <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
                           {evnt.name}

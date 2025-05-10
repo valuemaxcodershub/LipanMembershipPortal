@@ -1,3 +1,4 @@
+import { Button } from "flowbite-react";
 import { usePaystackPayment } from "react-paystack";
 
 const PaystackPayment = () => {
@@ -5,11 +6,11 @@ const PaystackPayment = () => {
     reference: new Date().getTime().toString(),
     email: "user@example.com",
     amount: 20000, //Amount is in the country's lowest currency. E.g Kobo, so 20000 kobo = N200
-    publicKey: "pk_test_dsdfghuytfd2345678gvxxxxxxxxxx",
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
   };
 
   // you can call this function anything
-  const onSuccess = (reference) => {
+  const onSuccess = (reference: any) => {
     // Implementation for whatever you want to do with reference and after success call.
     console.log(reference);
   };
@@ -22,13 +23,15 @@ const PaystackPayment = () => {
   const initializePayment = usePaystackPayment(config);
   return (
     <div>
-      <button
+      <Button
         onClick={() => {
-          initializePayment(onSuccess, onClose);
+          initializePayment({ onSuccess, onClose });
         }}
       >
         Paystack Hooks Implementation
-      </button>
+      </Button>
     </div>
   );
 };
+
+export default PaystackPayment;

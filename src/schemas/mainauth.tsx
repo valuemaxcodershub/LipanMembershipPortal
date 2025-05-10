@@ -69,7 +69,7 @@ export const contactAttachmentformats = [
 
 export const contactAdminSchema = yup.object().shape({
   subject: yup.string().required("Subject is required"),
-  email: yup.string().email("Invalid email").required("Email is required"),
+  // email: yup.string().email("Invalid email").required("Email is required"),
   message: yup.string().required("Message is required"),
   attachment: yup
     .mixed()

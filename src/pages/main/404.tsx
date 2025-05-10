@@ -34,7 +34,7 @@ function NotFoundPage() {
             color="blue"
             className="flex items-center gap-2"
           >
-            <FiHome className="h-6 mr-3"/>
+            <FiHome className="h-6 mr-3" />
             Back to Homepage
           </Button>
           {/* <Button

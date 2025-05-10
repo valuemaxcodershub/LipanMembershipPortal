@@ -31,6 +31,7 @@ import { Register } from "../../utils/api/auth";
 import { toast } from "react-toastify";
 import { useApp } from "../../hooks/app";
 import { Link, useNavigate } from "react-router-dom";
+import PasswordInput from "../../components/UI/PasswordInput";
 
 function MultiSectionForm() {
   const { areasOfInterest, levelOfLearners } = useApp();
@@ -71,7 +72,7 @@ function MultiSectionForm() {
               <option value="mrs">Mrs.</option>
               <option value="miss">Miss</option>
               <option value="dr">Dr</option>
-              <option value="professor">Professor</option>
+              <option value="prof">Professor</option>
             </Select>
           </div>
           <div className="my-6">
@@ -245,24 +246,20 @@ function MultiSectionForm() {
         <>
           <div className="my-6">
             <Label value="Password" />
-            <TextInput
+            <PasswordInput
               {...register("password1")}
               type="password"
               placeholder="Password"
-              icon={FiLock}
-              color={errors.password1 ? "failure" : undefined}
-              helperText={errors.password1?.message}
+              error={errors.password1}
             />
           </div>
           <div className="my-6">
             <Label value="Confirm Password" />
-            <TextInput
+            <PasswordInput
               {...register("password2")}
               type="password"
               placeholder="Confirm Password"
-              icon={FiLock}
-              color={errors.password2 ? "failure" : undefined}
-              helperText={errors.password2?.message}
+              error={errors.password2}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -365,10 +362,10 @@ function MultiSectionForm() {
               <div
                 className={`flex size-12 items-center justify-center rounded-full ${
                   index === section
-                    ? "bg-blue-100"
+                    ? "bg-blue-200"
                     : index < section
-                      ? "bg-green-100"
-                      : "bg-gray-100"
+                      ? "bg-green-200"
+                      : "bg-gray-200"
                 }`}
               >
                 {index < section ? (

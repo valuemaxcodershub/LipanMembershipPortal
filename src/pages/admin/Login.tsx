@@ -18,6 +18,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Login } from "../../utils/api/auth";
 import { toast } from "react-toastify";
 import Buttonloader from "../../components/UI/Buttonloader";
+import PasswordInput from "../../components/UI/PasswordInput";
 
 const schema = yup.object().shape({
   email: yup
@@ -26,7 +27,7 @@ const schema = yup.object().shape({
     .required("Email is required"),
   password: yup
     .string()
-//     .min(6, "Password must be at least 6 characters")
+    //     .min(6, "Password must be at least 6 characters")
     .required("Password is required"),
 });
 
@@ -47,6 +48,8 @@ const AdminLoginPage = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
+    resetField,
+    reset,
   } = useForm({
     resolver: yupResolver(schema),
   });
@@ -78,12 +81,15 @@ const AdminLoginPage = () => {
     console.log("Admin Login Data:", formdata);
     // TODO: handle actual login (call API, redirect, etc.)
     try {
-      const { data } = await Login(formdata);
+      const { data } = await Login(formdata, "admin");
       login(data);
+      reset();
       navigate("/admin/dashboard");
       toast.success("Login successfully");
     } catch (err: any) {
       toast.error(err.message);
+      setCaptchaInput("");
+      resetField("password");
       captchaRef.current?.refreshCaptcha();
     }
   };
@@ -128,40 +134,13 @@ const AdminLoginPage = () => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="password" value="Password" />
-            <div className="relative">
-              <TextInput
-                id="password"
-                type={showPassword ? "text" : "password"}
-                icon={HiLockClosed}
-                placeholder="********"
-                disabled={isSubmitting}
-                {...register("password")}
-                color={errors.password ? "failure" : "gray"}
-              />
-              <div className={`absolute right-3 top-3 flex items-center`}>
-                <Tooltip
-                  className="!text-sm"
-                  content={showPassword ? "Hide" : "Show"}
-                  animation="duration-500"
-                >
-                  <button
-                    type="button"
-                    className="text-gray-500 dark:text-gray-300 text-lg"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <HiEyeOff /> : <HiEye />}
-                  </button>
-                </Tooltip>
-              </div>
-            </div>
-            {errors.password && (
-              <span className="text-red-600 text-sm">
-                {errors.password.message}
-              </span>
-            )}
-          </div>
+          <PasswordInput
+            label="Password"
+            placeholder="********"
+            disabled={isSubmitting}
+            {...register("password")}
+            error={errors.password}
+          />
 
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -175,6 +154,7 @@ const AdminLoginPage = () => {
               placeholder="Type the characters you see above"
               disabled={isSubmitting}
               color={captchaError ? "failure" : "gray"}
+              value={captchaInput}
               onChange={(e) => setCaptchaInput(e.target.value)}
               helperText={
                 captchaError && (

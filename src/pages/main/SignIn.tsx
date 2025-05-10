@@ -1,7 +1,14 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
-import { TextInput, Button, Tooltip, Card, Label, Checkbox } from "flowbite-react";
+import {
+  TextInput,
+  Button,
+  Tooltip,
+  Card,
+  Label,
+  Checkbox,
+} from "flowbite-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "../../components/UI/Logo";
@@ -39,7 +46,7 @@ function SignInPage() {
     register: resetRegister,
     handleSubmit: resetHandleSubmit,
     reset: resetReset,
-    formState: { errors: resetErrors },
+    formState: { errors: resetErrors, isSubmitting: isResetSubmitting },
     setValue,
   } = useForm({
     resolver: yupResolver(resetSchema),
@@ -94,6 +101,7 @@ function SignInPage() {
     } catch (error: any) {
       console.log(error);
       toast.error(error.message.trim());
+      setCaptchaInput("");
       resetField("password");
     } finally {
       setLoading(false);
@@ -102,8 +110,6 @@ function SignInPage() {
 
   const handleReset = async (resetData: ResetSchemaType) => {
     setResetLoading(true);
-    console.log(resetData);
-
     try {
       const { data } = await axios.post("/auth/password/reset/", resetData);
       console.log(data);
@@ -195,6 +201,7 @@ function SignInPage() {
                 placeholder="Type the characters you see above"
                 disabled={loading}
                 color={captchaError ? "failure" : "gray"}
+                value={captchaInput}
                 onChange={(e) => setCaptchaInput(e.target.value)}
                 helperText={
                   captchaError && (
@@ -260,6 +267,7 @@ function SignInPage() {
                 className="dark:text-gray-200 hover:bg-slate-300/20 rounded-full mb-4 cursor-pointer"
                 size={30}
                 onClick={() => {
+                  if (isResetSubmitting) return;
                   resetReset();
                   setShowForgotPassword(false);
                 }}
@@ -278,15 +286,15 @@ function SignInPage() {
                 placeholder="Your email"
                 color={resetErrors.email ? "failure" : ""}
                 helperText={resetErrors.email?.message}
-                //   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-main_color"
+                disabled={isResetSubmitting}
               />
 
               <button
                 type="submit"
-                disabled={resetLoading}
+                disabled={isResetSubmitting}
                 className="w-full py-2 bg-blue-600 text-white text-center font-bold rounded-md disabled:bg-blue-400 transition duration-300"
               >
-                {resetLoading ? (
+                {isResetSubmitting ? (
                   <AiOutlineLoading className="size-7 animate-spin inline-block" />
                 ) : (
                   "Send Reset Link"

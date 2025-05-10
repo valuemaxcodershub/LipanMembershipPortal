@@ -71,8 +71,8 @@ const AppContextProvider = ({ children }: { children: ReactNode }) => {
         const { data: levels } = await axios.get("/levels/");
         console.log(interests, levels);
 
-        dispatch({ type: "SET_INTERESTS", payload: interests.results });
-        dispatch({ type: "SET_LEVELS", payload: levels.results });
+        dispatch({ type: "SET_INTERESTS", payload: interests });
+        dispatch({ type: "SET_LEVELS", payload: levels });
       } catch (error) {
         console.error("Failed to fetch app context data:", error);
       }

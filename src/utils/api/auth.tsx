@@ -6,9 +6,10 @@ import {
 } from "../../schemas/mainauth";
 import { errorHandler } from "./errors";
 
-export const Login = async (formData: SignInSchemaType) => {
+export const Login = async (formData: SignInSchemaType, type: string = "user") => {
   try {
-    const response = await axios.post("/auth/login/", formData);
+    // const response = await axios.post(`/auth${type === "user" ? "" : "/admin"}/login/`, formData);
+    const response = await axios.post(`/auth/login/`, formData);
     return response;
   } catch (error) {
     throw new Error(errorHandler(error));

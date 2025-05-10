@@ -7,7 +7,7 @@ import {
   defaultCustomizations,
   getFlutterConfig,
 } from "../../config/flutterwave.config";
-import { FlutterWaveResponse } from "flutterwave-react-v3/dist/types";
+import { FlutterWaveResponse,FlutterwaveConfig } from "flutterwave-react-v3/dist/types";
 import { Button } from "flowbite-react";
 
 export default function FlutterWavePayment() {
@@ -29,8 +29,8 @@ export default function FlutterWavePayment() {
   //     },
   //   };
 
-  const config = getFlutterConfig({
-    amount: 200,
+  const config: FlutterwaveConfig = getFlutterConfig({
+    amount: 200, // Ensure amount is explicitly a number
     customer: {
       email: "user@gmail.com",
       phone_number: "070********",

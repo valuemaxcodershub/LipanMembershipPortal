@@ -8,7 +8,7 @@ import {
   Badge,
   ToggleSwitch,
   Checkbox,
-  Datepicker,
+  Dropdown,
 } from "flowbite-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -18,10 +18,14 @@ import Switch from "../../components/UI/Switch";
 import axios from "../../config/axios";
 import { toast } from "react-toastify";
 import { Skeleton } from "../../components/UI/Skeleton";
+import MultiSelect from "../../components/UI/MultiSelect";
+import { HiMenu, HiPencil, HiTrash } from "react-icons/hi";
+import ConfirmationModal from "../../components/UI/ConfirmModal";
+import { formatDate } from "../../utils/app/time";
 
 // Define event schema with featured field
 const eventSchema = yup.object().shape({
-  image: yup.string(),
+  // image: yup.string(),
   title: yup.string().required("Event title is required"),
   location: yup.string().required("Event location is required"),
   description: yup.string().required("Description is required"),
@@ -29,20 +33,23 @@ const eventSchema = yup.object().shape({
   tags: yup.array().of(yup.string().required("Tag cannot be empty")),
   allowed_memberships: yup
     .array()
-    .of(yup.string().required("Allowed memberships cannot be empty")),
-  is_featured: yup.boolean(), // New field for featured status
+    .required("Allowed memberships cannot be empty")
+    .min(1, "At least one membership is required"),
+  is_featured: yup.boolean(),
 });
 
 type EventsSchemaType = yup.InferType<typeof eventSchema>;
 
 interface Event {
+  id: number;
+  // image: string;
   title: string;
   location: string;
   description: string;
   date: string;
   tags: string[];
-  allowed_memberships: string[]; // Memberships that can access the event
-  is_featured: boolean; // Featured status
+  allowed_memberships: number[];
+  is_featured: boolean;
 }
 
 export default function AdminEventsPage() {
@@ -52,13 +59,15 @@ export default function AdminEventsPage() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<EventsSchemaType>({
     resolver: yupResolver(eventSchema),
     defaultValues: {
+      // image: "",
       tags: [""],
-      allowed_memberships: [""],
-      is_featured: false, // Default value for is_featured
+      allowed_memberships: [],
+      is_featured: false,
     },
   });
 
@@ -71,71 +80,138 @@ export default function AdminEventsPage() {
     name: "tags" as never,
   });
 
-  const {
-    fields: membershipFields,
-    append: appendMembership,
-    remove: removeMembership,
-  } = useFieldArray({
-    control,
-    name: "allowed_memberships" as never,
-  });
-
   const [events, setEvents] = useState<Partial<Event>[]>([]);
   const [memberships, setMemberships] = useState([]);
+  const [creationType, setCreationType] = useState("create");
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
+  const [isloading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
-  const [filterFeatured, setFilterFeatured] = useState(false); // New state for filtering featured events
+  const [filterFeatured, setFilterFeatured] = useState(false);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "long", // e.g., "April"
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true, // Set to false for 24-hour format
-    };
-    const date = new Date(e.target.value).toLocaleString("en-US", options);
-    console.log(date)
-    setValue("date", date)
-  }
+    const date = new Date(e.target.value).toISOString().slice(0, 16);
+    console.log(date);
+    setValue("date", date);
+  };
 
   const getEvents = async () => {
-    setIsFetching(true)
-      try {
-        const { data:membershipData } = await axios.get("/membership/");
-        const { data } = await axios.get("/admin/events/");
-        console.log("Fetched Events:", data, membershipData); 
-        setEvents(data.results);
-        setIsFetching(false)
-      }catch(err) {
-        console.error("Error fetching events:", err);
-      }
-    }
-  const onSubmit = async (formdata: EventsSchemaType) => {
-    console.log("Submitted Event:", formdata);
-    const Data = {
-      ...formdata,
-      image: formdata.image ? formdata.image[0] : null,
-    }
+    setIsFetching(true);
     try {
-      const { data } = await axios.post("/admin/events/", Data);
-      // console.log("Created Event:", data);
-      toast.success("Event created successfully!");
-      getEvents()
-      reset(); // Reset the form after successful submission
-      setOpenModal(false); // Close the modal
-    } catch (err: any) {
-      console.error("Error creating event:", err);
-      toast.error(err.message || "Failed to create event.");
+      const [eventsResponse, membershipResponse] = await Promise.all([
+        axios.get("/admin/events/"),
+        axios.get("/membership/"),
+      ]);
+      setEvents(eventsResponse.data.results || []);
+      setMemberships(
+        (membershipResponse.data.results || []).map((item: any) => ({
+          label: item.name,
+          value: item.id,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      toast.error("Failed to fetch events. Please try again.");
+    } finally {
+      setIsFetching(false);
     }
   };
 
-  useEffect(()=>{
-   getEvents()
-  }, [])
+  const onSubmit = async (formdata: EventsSchemaType) => {
+    console.log("Form Data:", formdata);
+    console.log("Processed Data:", formdata); // Debugging log
 
-  // Filtered events based on "Featured" toggle
+    if (creationType === "create") {
+      await submit(formdata);
+    } else {
+      await handleEdit(formdata);
+    }
+  };
+
+  useEffect(() => {
+    getEvents();
+  }, []);
+
+  const intializeAction = (index: number, type: string) => {
+    setSelectedIndex(index);
+    if (type === "delete") {
+      setOpenConfirmModal(true);
+    }
+    if (type === "edit") {
+      setCreationType("edit");
+      const event = events[index];
+
+      // Format the date for the datetime-local input
+      const formattedDate = new Date(event.date as string)
+        .toISOString()
+        .slice(0, 16);
+
+      reset({
+        // image: event.image,
+        title: event.title,
+        location: event.location,
+        description: event.description,
+        date: formattedDate, // Use the formatted date
+        tags: event.tags || [""],
+        allowed_memberships: event.allowed_memberships || [],
+        is_featured: event.is_featured || false,
+      });
+      setOpenModal(true);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (selectedIndex !== null) {
+      setIsLoading(true);
+      try {
+        await axios.delete(`/admin/events/${events[selectedIndex].id}/`);
+        toast.success("Event deleted successfully!");
+        getEvents();
+      } catch (err: any) {
+        console.error("Error deleting event:", err);
+        toast.error(err.message || "Failed to delete event.");
+      } finally {
+        setOpenConfirmModal(false);
+        setIsLoading(false);
+        setSelectedIndex(null);
+      }
+    }
+  };
+
+  const handleEdit = async (Data: EventsSchemaType) => {
+    if (selectedIndex !== null) {
+      try {
+        await axios.put(`/admin/events/${events[selectedIndex].id}/`, Data);
+        toast.success("Event updated successfully!");
+        getEvents();
+        setOpenModal(false);
+        setCreationType("create");
+        reset();
+      } catch (err: any) {
+        console.error("Error updating event:", err);
+        toast.error(err.message || "Failed to update event.");
+      } finally {
+        setSelectedIndex(null);
+      }
+    }
+  };
+
+  const submit = async (Data: EventsSchemaType) => {
+    try {
+      await axios.post("/admin/events/", Data);
+      toast.success("Event created successfully!");
+      getEvents();
+      reset();
+      setOpenModal(false);
+    } catch (err: any) {
+      console.error("Error creating event:", err);
+      toast.error(
+        err.response.data.detail || err.message || "Failed to create event."
+      );
+    }
+  };
+
   const filteredEvents = filterFeatured
     ? events.filter((event) => event.is_featured)
     : events;
@@ -144,12 +220,23 @@ export default function AdminEventsPage() {
     <div className="mx-auto max-w-6xl p-4 text-gray-800 dark:text-gray-100">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Manage Events</h1>
-        <Button onClick={() => setOpenModal(true)}>+ Create Event</Button>
+        <Button
+          color="blue"
+          disabled={isFetching}
+          onClick={() => {
+            reset();
+            setCreationType("create");
+            setOpenModal(true);
+          }}
+        >
+          + Create Event
+        </Button>
       </div>
 
       {/* Filter Toggle for Featured Events */}
       <div className="mb-4 flex items-center gap-4">
         <Switch
+          disabled={isFetching}
           checked={filterFeatured}
           onChange={setFilterFeatured}
           label="Show Featured Events Only"
@@ -158,10 +245,18 @@ export default function AdminEventsPage() {
 
       <Modal
         show={openModal}
-        onClose={() => !isSubmitting && setOpenModal(false)}
+        onClose={() => {
+          if (!isSubmitting) {
+            setCreationType("create");
+            reset();
+            setOpenModal(false);
+          }
+        }}
         size="2xl"
       >
-        <Modal.Header>Create New Event</Modal.Header>
+        <Modal.Header>
+          {creationType === "create" ? "Create New Event" : "Editing Event..."}
+        </Modal.Header>
         <Modal.Body>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
@@ -193,8 +288,8 @@ export default function AdminEventsPage() {
                 id="date"
                 disabled={isSubmitting}
                 type="datetime-local"
+                defaultValue={watch("date")}
                 onChange={handleDateChange}
-                // Disable past dates and Time
                 min={new Date().toISOString().slice(0, 16)}
                 color={errors.date ? "failure" : undefined}
                 helperText={errors.date?.message}
@@ -245,6 +340,7 @@ export default function AdminEventsPage() {
                 onClick={() => appendTag("")}
                 size="sm"
                 className="mt-2"
+                color="blue"
               >
                 + Add Tag
               </Button>
@@ -252,54 +348,30 @@ export default function AdminEventsPage() {
 
             <div>
               <Label value="Allowed Memberships" />
-              {membershipFields.map((field, index) => (
-                <div key={field.id} className="mb-2 flex gap-2">
-                  <TextInput
-                    {...register(`allowed_memberships.${index}`)}
-                    disabled={isSubmitting}
-                    className="flex-1"
-                  />
-                  <Button
-                    color="failure"
-                    disabled={isSubmitting}
-                    size="sm"
-                    type="button"
-                    onClick={() => removeMembership(index)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
+              <MultiSelect<any>
+                labelKey="label"
+                valueKey="value"
+                options={memberships}
+                selected={(watch("allowed_memberships") || [])
+                  .map((key: string) =>
+                    memberships.find(
+                      (membership: { value: string; label: string }) =>
+                        membership.value === key
+                    )
+                  )
+                  .filter((membership) => !!membership)}
+                onChange={(selected) => {
+                  const selectedValues = selected.map((item: any) =>
+                    Number(item.value)
+                  );
+                  setValue("allowed_memberships", selectedValues);
+                }}
+              />
               {errors.allowed_memberships && (
                 <p className="text-sm text-red-500">
-                  {errors.allowed_memberships.message ||
-                    errors.allowed_memberships[0]?.message}
+                  {errors.allowed_memberships.message}
                 </p>
               )}
-              <div>
-                <select
-                  className="mt-2 p-2 border rounded"
-                  onChange={(e) => {
-                    const selectedMembership = e.target.value;
-                    if (selectedMembership) {
-                      appendMembership(selectedMembership);
-                      e.target.value = ""; // Reset the dropdown
-                    }
-                  }}
-                >
-                  <option value="">Select Membership</option>
-                  {["Gold", "Silver", "Bronze"].map(
-                    (membership) =>
-                      !membershipFields.some(
-                        (field) => field.value === membership
-                      ) && (
-                        <option key={membership} value={membership}>
-                          {membership}
-                        </option>
-                      )
-                  )}
-                </select>
-              </div>
             </div>
 
             <div className="space-x-3">
@@ -317,8 +389,13 @@ export default function AdminEventsPage() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                Save Event
+              <Button
+                type="submit"
+                color={creationType === "create" ? "blue" : "warning"}
+                disabled={isSubmitting}
+                isProcessing={isSubmitting}
+              >
+                {creationType === "create" ? "Create Event" : "Update Event"}
               </Button>
             </div>
           </form>
@@ -333,12 +410,12 @@ export default function AdminEventsPage() {
                 key={idx}
                 className="bg-white dark:bg-gray-800 shadow-md text-center"
               >
-                <Skeleton className="rounded-md h-6 w-12/12" />
-                <Skeleton className="rounded-md h-6 w-6/12" />
-                <Skeleton className="rounded-md h-6 w-10/12" />
-                <Skeleton className="rounded-md h-6 w-9/12" />
+                <Skeleton className="rounded-md h-6 w-full" />
+                <Skeleton className="rounded-md h-6 w-6/12 mx-auto" />
+                <Skeleton className="rounded-md h-6 w-10/12 mx-auto" />
+                <Skeleton className="rounded-md h-6 w-9/12 mx-auto" />
 
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-3 flex items-center gap-3 justify-center">
                   <Skeleton className="rounded-md h-5 w-9" />
                   <Skeleton className="rounded-md h-5 w-9" />
                   <Skeleton className="rounded-md h-5 w-9" />
@@ -356,11 +433,31 @@ export default function AdminEventsPage() {
                 {event.is_featured && (
                   <Badge
                     color="warning"
-                    className="absolute -top-1 -right-1 text-xs"
+                    className="absolute -top-1 -left-1 text-xs"
                   >
                     ⭐ Featured
                   </Badge>
                 )}
+                <div className="absolute cursor-pointer top-2 right-2 p-2 rounded-md border border-white/30">
+                  <Dropdown
+                    label=""
+                    dismissOnClick
+                    renderTrigger={() => <HiMenu className="text-lg" />}
+                    placement="left"
+                  >
+                    <Dropdown.Item onClick={() => intializeAction(idx, "edit")}>
+                      <HiPencil className="mr-2 h-6 text-md text-yellow-300" />{" "}
+                      Edit
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => intializeAction(idx, "delete")}
+                    >
+                      <HiTrash className="mr-2 h-6 text-md text-[#ff0000]" />{" "}
+                      Delete
+                    </Dropdown.Item>
+                  </Dropdown>
+                </div>
                 <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-300">
                   {event.title}
                 </h3>
@@ -371,7 +468,7 @@ export default function AdminEventsPage() {
                   {event.description}
                 </p>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  📅 {event.date}
+                  📅 {formatDate(event.date as string)}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {event.tags?.map((tag, tIdx) => (
@@ -385,7 +482,7 @@ export default function AdminEventsPage() {
           </>
         ) : (
           <>
-            <Card className="bg-white dark:bg-gray-800 shadow-md text-center p-6">
+            <Card className="bg-white col-span-1 lg:col-span-2 xl:col-span-3 dark:bg-gray-800 shadow-md text-center p-6">
               <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
                 No Events Found
               </h3>
@@ -396,6 +493,13 @@ export default function AdminEventsPage() {
           </>
         )}
       </div>
+
+      <ConfirmationModal
+        open={openConfirmModal}
+        onClose={() => !isloading && setOpenConfirmModal(false)}
+        loading={isloading}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { createContext } from "react";
 
 export interface UserType {
-  id: string;
   profile_pic: string;
   full_name: string;
   email: string;
