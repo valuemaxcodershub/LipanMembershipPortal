@@ -12,6 +12,7 @@ import {
   TabItem,
   Textarea,
   Progress,
+  Pagination,
 } from "flowbite-react";
 import { useState, useEffect } from "react";
 import {
@@ -40,6 +41,7 @@ import { toast } from "react-toastify";
 import { formatDate } from "../../utils/app/time";
 import { UserType } from "../../contexts/createContexts/auth";
 import MultiSelect from "../../components/UI/MultiSelect";
+import { useSearchParams } from "react-router-dom";
 type JournalEntry = {
   id: number;
   title: string;
@@ -75,41 +77,13 @@ const newJournalschema = yup.object({
   file: yup.mixed().required("File is required"),
 });
 
-const mockData = [
-  {
-    id: 1,
-    title: "My First Journal",
-    description: "This is my first journal entry.",
-    owner_name: "John Doe",
-    created_at: "2025-04-10",
-    filename: "sample.pdf",
-    status: "pending",
-    slug: "file1",
-  },
-  {
-    id: 1,
-    title: "My  Journal",
-    description: "This is my  journal entry.",
-    owner_name: "John Doe",
-    created_at: "2025-04-10",
-    filename: "image.jpg",
-    status: "approved",
-    slug: "file2",
-  },
-  {
-    id: 2,
-    title: "My Second Journal",
-    description: "This is my second journal entry.",
-    owner_name: "Jane Smith",
-    created_at: "2025-04-09",
-    filename: "sample.pdf",
-    status: "rejected",
-    rejection_reason: "Content not appropriate",
-    slug: "file1",
-  },
-];
-
 export default function ManageJournalsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "";
+
   const { downloadFile, progress } = useDownloadFile();
   const {
     handleSubmit,
@@ -127,16 +101,15 @@ export default function ManageJournalsPage() {
 
   const uploadedFile = watch("file") as FileList;
   const [journals, setJournals] = useState<JournalEntry[]>([]);
-
-  const [selectedJournal, setSelectedJournal] = useState<JournalEntry | null>(
-    null
-  );
   const [confirmAction, setConfirmAction] = useState<null | {
     type: "delete" | "approve" | "reject" | "download";
     journal: JournalEntry;
   }>(null);
   const [activeTab, setActiveTab] = useState<keyof typeof statusMapping>("0");
   const [error, setError] = useState("0");
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchValue, setSearchValue] = useState("");
+  const [debounceValue, setDebounceValue] = useState("");
   const [isActionLoading, setActionLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [openRejectModal, setOpenRejectModal] = useState(false);
@@ -150,10 +123,11 @@ export default function ManageJournalsPage() {
     try {
       const { data: interestsData } = await axios.get(`/interests/`);
       const response = await axios.get("/admin/resources/", {
-        params: { search: "", status: statusMapping[activeTab] },
+        params: { page, search, status },
       });
-      console.log(response.data.results);
+      console.log(response.data);
       setJournals(response.data.results);
+      setTotalPages(response.data.total_pages);
       setInterests(
         interestsData.map((int: any) => ({ label: int.name, value: int.id }))
       );
@@ -168,7 +142,7 @@ export default function ManageJournalsPage() {
   };
   useEffect(() => {
     fetchJournals();
-  }, [activeTab]);
+  }, [page, search, status]);
 
   const initializeAction = async (
     type: "delete" | "approve" | "reject" | "download",
@@ -245,10 +219,44 @@ export default function ManageJournalsPage() {
     }
   };
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDebounceValue(searchValue);
+    }, 500);
+    return () => clearInterval(id);
+  }, [searchValue]);
+  useEffect(() => {
+    updateParams({
+      search: debounceValue,
+      status: statusMapping[activeTab],
+    });
+  }, [debounceValue, activeTab]);
+
+  const updateParams = (fields: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    setSearchParams(params);
+  };
+
+  const onPageChange = (page: number) =>
+    updateParams({ page: page.toString() });
+
   return (
     <div className="mx-auto p-4 text-gray-800 dark:text-gray-100">
-      <div className="flex flex-col lg:flex-row gap-3 justify-between items-center">
-        <h1 className="mb-6 text-3xl font-bold">Approve Member Journals</h1>
+      <h1 className="mb-6 text-3xl font-bold">Approve Member Journals</h1>
+      <div className="flex flex-col lg:flex-row gap-3 justify-between items-center my-3">
+        <TextInput
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="w-full lg:w-6/12"
+          placeholder="Search for journal...."
+        />
         <div className="flex items-center gap-3">
           <Tooltip content="Refresh" placement="right">
             <Button
@@ -273,10 +281,10 @@ export default function ManageJournalsPage() {
             setActiveTab(String(tab) as keyof typeof statusMapping)
           }
         >
-          <TabItem active title="All" icon={BsDatabase}></TabItem>
-          <TabItem title="Pending" icon={BsHourglass}></TabItem>
-          <TabItem title="Approved" icon={BsCheckAll}></TabItem>
-          <TabItem title="Rejected" icon={BsExclamationTriangle}></TabItem>
+          <TabItem active title="All" icon={BsDatabase} />
+          <TabItem title="Pending" icon={BsHourglass} />
+          <TabItem title="Approved" icon={BsCheckAll} />
+          <TabItem title="Rejected" icon={BsExclamationTriangle} />
         </Tabs>
       </div>
 
@@ -429,6 +437,16 @@ export default function ManageJournalsPage() {
           </Table.Body>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center pt-4">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
 
       <Modal
         show={uploadModalOpen}

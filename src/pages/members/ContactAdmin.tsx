@@ -9,6 +9,9 @@ import {
 } from "../../schemas/mainauth";
 import { useState } from "react";
 import { PageMeta } from "../../utils/app/pageMetaValues";
+import axios from "../../config/axios";
+import { toast } from "react-toastify";
+import { errorHandler } from "../../utils/api/errors";
 
 export default function ContactAdminsPage() {
   const {
@@ -17,25 +20,53 @@ export default function ContactAdminsPage() {
     formState: { errors },
     reset,
     setValue,
-    watch,
     trigger,
     clearErrors,
   } = useForm({
     resolver: yupResolver(contactAdminSchema),
   });
 
-  const onSubmit = (data: ContactAdminSchemaType) => {
-    console.log("Form Submitted:", data);
-    alert("Form submitted successfully!");
-    reset();
+  const onSubmit = async (formdata: ContactAdminSchemaType) => {
+    console.log("Form Submitted:", formdata);
+    const toastUpdateOptions = {
+      isLoading: false,
+      autoClose: 5000,
+    };
+    const toastId = toast.loading("Sending Message....", {
+      position: "top-center",
+    });
+    const formData = new FormData();
+    Object.entries(formdata).forEach(([key, value]) => {
+      if (key === "attachment" && value) {
+        console.log(value);
+        formData.append(key, value[0]);
+      } else {
+        formData.append(key, value as string);
+      }
+    });
+    try {
+      const { data } = await axios.post("/contact-admin/", formData);
+      console.log("Response:", data);
+      reset();
+      setPreviewFiles([]);
+      toast.update(toastId, {
+        ...toastUpdateOptions,
+        render: data?.detail || "Message sent successfully!",
+        type: "success",
+      });
+    } catch (err) {
+      console.error("Error:", err);
+      const message = errorHandler(err);
+      const errorMessage = message || "An unexpected error occurred";
+      toast.update(toastId, {
+        ...toastUpdateOptions,
+        render: errorMessage,
+        type: "error",
+      });
+    }
   };
 
   const [previewFiles, setPreviewFiles] = useState<any[]>([]);
-
-  const saveDraft = () => {
-    alert("Draft saved locally (simulate save draft)");
-  };
-  const files = watch("attachment") as FileList;
 
   return (
     <>
@@ -47,7 +78,37 @@ export default function ContactAdminsPage() {
         />
       </PageMeta>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Forms & Actions</h1>
+        <h1 className="text-2xl font-bold mb-6">Contact Admin for Support</h1>
+
+        {/* Guidance Section */}
+        <div className="bg-blue-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+          <h2 className="text-lg font-semibold text-blue-800 dark:text-white">
+            How to Structure Your Message
+          </h2>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+            To ensure your message is effective, please include the following
+            details:
+          </p>
+          <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mt-2">
+            <li>
+              A clear and concise subject line summarizing your issue or
+              inquiry.
+            </li>
+            <li>
+              A detailed description of your request, including any relevant
+              context or examples.
+            </li>
+            <li>
+              If applicable, include steps to reproduce the issue or screenshots
+              for clarity.
+            </li>
+          </ul>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mt-4">
+            <strong>Note:</strong> If you wish to send multiple files, please
+            compress them into a single zipped file before attaching.
+          </p>
+        </div>
+
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-4 bg-white dark:bg-gray-800 shadow p-6 rounded-lg"
@@ -80,7 +141,7 @@ export default function ContactAdminsPage() {
               label="Attach a File"
               subtext={
                 //     errors.attachment?.message ||
-                "Max size: 2MB, formats: jpg, png, pdf, docx"
+                "Max size: 10MB, formats: jpg, png, pdf, zip, docx"
               }
               //   className={errors.attachment ? "!border-red-500 !bg-red-400" : ""}
               onFilesSelected={(files) => {
@@ -93,7 +154,7 @@ export default function ContactAdminsPage() {
                     size: file.size,
                     ok: isValid,
                   }));
-                  console.log(items);
+                  console.log(files);
                   setPreviewFiles((prev) => [
                     //    ...prev,
                     ...items,
@@ -105,6 +166,11 @@ export default function ContactAdminsPage() {
               }}
               accept={contactAttachmentformats.join(", ")}
             />
+            {errors.attachment && (
+              <p className="text-sm text-red-500 my-2">
+                {errors.attachment?.message}
+              </p>
+            )}
             {previewFiles && (
               <ul className="space-y-5">
                 {Array.from(previewFiles).map((file, index) => (
@@ -142,9 +208,6 @@ export default function ContactAdminsPage() {
             <Button type="submit" color="blue" fullSized>
               Submit
             </Button>
-            {/* <Button type="button" color="gray" onClick={saveDraft}>
-              Save Draft
-            </Button> */}
           </div>
         </form>
       </div>

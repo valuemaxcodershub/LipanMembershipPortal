@@ -1,36 +1,68 @@
 import { Button } from "flowbite-react";
 import { usePaystackPayment } from "react-paystack";
+import { usePayment } from "../../hooks/payment";
+import { AiOutlineLoading } from "react-icons/ai";
 
-const PaystackPayment = () => {
+const PaystackPayment = ({
+  amount,
+  email,
+  name,
+  description = "LiPAN Payment",
+}: {
+  amount: number;
+  email: string;
+  name: string;
+  description: string;
+}) => {
+  const { processPayment, isProcessingPayment } = usePayment();
   const config = {
     reference: new Date().getTime().toString(),
-    email: "user@example.com",
-    amount: 20000, //Amount is in the country's lowest currency. E.g Kobo, so 20000 kobo = N200
+    email,
+    amount: amount * 100, // Paystack expects amount in kobo
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+    metadata: {
+      custom_fields: [
+        { display_name: "Full Name", variable_name: "full_name", value: name },
+        {
+          display_name: "Payment description",
+          variable_name: "description",
+          value: description,
+        },
+      ],
+    },
   };
 
-  // you can call this function anything
-  const onSuccess = (reference: any) => {
-    // Implementation for whatever you want to do with reference and after success call.
-    console.log(reference);
+  const onSuccess = async (ref: any) => {
+    console.log(ref);
+    await processPayment({
+      transaction_id: ref.transaction,
+      transaction_ref: ref.trxref,
+      payment_method: "paystack",
+      total: amount,
+      amount,
+      status: ref.status,
+      description,
+    });
   };
 
-  // you can call this function anything
   const onClose = () => {
-    // implementation for  whatever you want to do when the Paystack dialog closed.
     console.log("closed");
   };
   const initializePayment = usePaystackPayment(config);
   return (
-    <div>
-      <Button
-        onClick={() => {
-          initializePayment({ onSuccess, onClose });
-        }}
-      >
-        Paystack Hooks Implementation
-      </Button>
-    </div>
+    <Button
+      disabled={isProcessingPayment}
+      className="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold"
+      onClick={() => {
+        initializePayment({ onSuccess, onClose });
+      }}
+    >
+      {isProcessingPayment ? (
+        <AiOutlineLoading className="animate-spin text-white !m-auto" />
+      ) : (
+        "Continue to pay"
+      )}
+    </Button>
   );
 };
 

@@ -20,12 +20,18 @@ import { BsReply, BsTable, BsGrid3X3GapFill } from "react-icons/bs";
 import { FiMail, FiDownload, FiSearch } from "react-icons/fi";
 import { FileDropzone } from "../../components/UI/FiledropZone";
 import { Skeleton } from "../../components/UI/Skeleton";
+import axios from "../../config/axios";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { errorHandler } from "../../utils/api/errors";
 
 const schema = yup.object().shape({
-  reply: yup.string().required("Reply is required"),
+  subject: yup.string().required("Subject is required"),
+  reply: yup.string().required("Message is required"),
 });
 
 export default function AdminContactMessagesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<any[]>([]);
   const [filteredMessages, setFilteredMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,16 +39,17 @@ export default function AdminContactMessagesPage() {
   const [viewModal, setViewModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [tableLayout, setTableLayout] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const itemsPerPage = 5;
+  const itemsPerPage = Number(searchParams.get("itemsPerPage")) || 10;
+  const page = Number(searchParams.get("page")) || 1;
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema),
   });
@@ -52,33 +59,21 @@ export default function AdminContactMessagesPage() {
     setTableLayout(layout === "table");
   }, []);
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const fetchedMessages = [
-        {
-          id: 1,
-          subject: "Login Issue",
-          email: "user@example.com",
-          message: "I can't access my account.",
-          attachment: "user_issue_screenshot.png",
-          date: "2025-04-10",
-          replied: false,
-        },
-        {
-          id: 2,
-          subject: "Bug Report",
-          email: "jane.doe@gmail.com",
-          message: "There's a problem with file upload.",
-          attachment: null,
-          date: "2025-04-09",
-          replied: true,
-        },
-      ];
-      setMessages(fetchedMessages);
-      setFilteredMessages(fetchedMessages);
+  const fetchMessages = async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get("/contact-admin/");
+      console.log("Fetched Messages:", data);
+      setMessages(data.results);
+      setTotalPages(data.total_pages);
+      setFilteredMessages(data.results);
       setLoading(false);
-    }, 2000);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+  useEffect(() => {
+    fetchMessages();
   }, []);
 
   useEffect(() => {
@@ -88,7 +83,6 @@ export default function AdminContactMessagesPage() {
         msg.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredMessages(filtered);
-    setCurrentPage(1);
   }, [searchQuery, messages]);
 
   const handleLayoutChange = (layout: string) => {
@@ -96,8 +90,12 @@ export default function AdminContactMessagesPage() {
     localStorage.setItem("layout", layout);
   };
 
-  const openReplyModal = (message: any) => {
-    setSelectedMessage(message);
+  const openReplyModal = (msg: any) => {
+    setSelectedMessage(msg);
+    reset({
+      subject: `Reply to: ${msg.subject}`,
+      reply: ""
+    });
     setReplyModal(true);
   };
 
@@ -106,16 +104,58 @@ export default function AdminContactMessagesPage() {
     setViewModal(true);
   };
 
-  const onReplySubmit = (data: any) => {
-    console.log("Reply Data:", data);
-    setReplyModal(false);
-    reset();
+  const onReplySubmit = async (formdata: any) => {
+    console.log("Reply Data:", formdata);
+    const toastId = toast.loading("Sending reply...", {
+      position: "top-center"
+    });
+    try {
+      const { data } = await axios.post(
+        `/contact-admin/${selectedMessage.id}/reply/`,
+        formdata
+      );
+      console.log("Reply Response:", data);
+      toast.update(toastId, {
+        render: data?.detail || "Reply sent successfully!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+      setReplyModal(false);
+    } catch (err: any) {
+      console.error("Error sending reply:", err);
+      const errorMsg = errorHandler(err);
+      toast.update(toastId, {
+        render: errorMsg || "Failed to send reply. Please try again.",
+        type: "error",
+        isLoading: false,
+        autoClose: 2000,
+      });
+    }
   };
 
   const paginatedMessages = filteredMessages.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
   );
+
+  const updateParams = (
+    object: Record<string, string | number | boolean> = {}
+  ) => {
+    const newParams = new URLSearchParams(searchParams);
+    Object.entries(object).forEach(([key, value]) => {
+      if (value) {
+        newParams.set(key, value.toString());
+      } else {
+        newParams.delete(key);
+      }
+    });
+    setSearchParams(newParams);
+  };
+
+  const onPageChange = (newPage: number) => {
+    updateParams({ page: newPage });
+  };
 
   return (
     <div>
@@ -178,9 +218,9 @@ export default function AdminContactMessagesPage() {
       ) : tableLayout ? (
         <Table>
           <Table.Head>
-            <Table.HeadCell className="text-center">Subject</Table.HeadCell>
             <Table.HeadCell className="text-center">Email</Table.HeadCell>
-            <Table.HeadCell className="text-center">Status</Table.HeadCell>
+            <Table.HeadCell className="text-center">Subject</Table.HeadCell>
+            <Table.HeadCell className="text-center">Message</Table.HeadCell>
             <Table.HeadCell className="text-center">Actions</Table.HeadCell>
           </Table.Head>
           <Table.Body>
@@ -189,15 +229,30 @@ export default function AdminContactMessagesPage() {
                 key={msg.id}
                 className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700"
               >
-                <Table.Cell>{msg.subject}</Table.Cell>
-                <Table.Cell>{msg.email}</Table.Cell>
                 <Table.Cell>
-                  <Badge
-                    className="w-fit m-auto"
-                    color={msg.replied ? "success" : "warning"}
-                  >
-                    {msg.replied ? "Replied" : "Pending"}
-                  </Badge>
+                  <div className="flex flex-col items-center">
+                    {msg.email}
+                    {msg.attachment && (
+                      <Badge color="warning" className="mt-1">
+                        Attachment
+                      </Badge>
+                    )}
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="flex flex-col items-center">
+                    {msg.subject}
+                    {msg.attachment && (
+                      <span className="inline-block md:hidden mt-1">
+                        <Badge color="warning">Attachment</Badge>
+                      </span>
+                    )}
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <p className="truncate max-w-[150px] text-center">
+                    {msg.message}
+                  </p>
                 </Table.Cell>
                 <Table.Cell className="flex justify-center items-center gap-2">
                   <Button
@@ -228,23 +283,25 @@ export default function AdminContactMessagesPage() {
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     {msg.subject}
+                    {msg.attachment && (
+                      <Badge color="warning" className="ml-2">
+                        Attachment
+                      </Badge>
+                    )}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {msg.email}
                   </p>
                 </div>
-                <Badge color={msg.replied ? "success" : "warning"}>
-                  {msg.replied ? "Replied" : "Pending"}
-                </Badge>
               </div>
 
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-2">
                 {msg.message}
               </p>
 
-              <div className="text-right">
+              <div className="text-right flex gap-3">
                 <Button
                   size="xs"
                   color="blue"
@@ -257,7 +314,7 @@ export default function AdminContactMessagesPage() {
                   color="blue"
                   onClick={() => openReplyModal(msg)}
                 >
-                  <BsReply className="mr-2 h-6" /> Reply
+                  <BsReply className="mr-2 h-4" /> Reply
                 </Button>
               </div>
             </Card>
@@ -265,49 +322,86 @@ export default function AdminContactMessagesPage() {
         </div>
       )}
 
-      <div className="mt-4 flex justify-center">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredMessages.length / itemsPerPage)}
-          onPageChange={(page) => setCurrentPage(page)}
-        />
-      </div>
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
 
-      <Modal show={viewModal} onClose={() => setViewModal(false)}>
-        <Modal.Header>Message Details</Modal.Header>
+      <Modal show={viewModal} onClose={() => setViewModal(false)} size="xl">
+        <Modal.Header>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            Message Details
+          </h2>
+        </Modal.Header>
         <Modal.Body>
-          <p>
-            <strong>Subject:</strong> {selectedMessage?.subject}
-          </p>
-          <p>
-            <strong>Email:</strong> {selectedMessage?.email}
-          </p>
-          <p>
-            <strong>Message:</strong> {selectedMessage?.message}
-          </p>
-          {selectedMessage?.attachment && (
-            <Button
-              size="xs"
-              color="gray"
-              onClick={() => alert("Downloading...")}
-            >
-              <FiDownload className="mr-2 h-4" /> Download Attachment
-            </Button>
-          )}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md space-y-6">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Subject
+              </p>
+              <p className="text-lg font-semibold text-gray-800 dark:text-white">
+                {selectedMessage?.subject}
+              </p>
+            </div>
+            <hr className="border-gray-200 dark:border-gray-700" />
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Email
+              </p>
+              <p className="text-lg font-semibold text-gray-800 dark:text-white">
+                {selectedMessage?.email}
+              </p>
+            </div>
+            <hr className="border-gray-200 dark:border-gray-700" />
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Message
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                {selectedMessage?.message}
+              </p>
+            </div>
+            {selectedMessage?.attachment && (
+              <>
+                <hr className="border-gray-200 dark:border-gray-700" />
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Attachment
+                  </p>
+                  <Button
+                    size="sm"
+                    color="gray"
+                    onClick={() => alert("Downloading...")}
+                    className="mt-2"
+                  >
+                    <FiDownload className="mr-2 h-4" /> Download Attachment
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </Modal.Body>
+        <Modal.Footer>
+          <Button color="blue" onClick={() => setViewModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       <Modal show={replyModal} onClose={() => setReplyModal(false)}>
-        <Modal.Header>Reply to: {selectedMessage?.email}</Modal.Header>
+        <Modal.Header>
+          Replying to: {selectedMessage?.email} message
+        </Modal.Header>
         <Modal.Body>
           <form className="space-y-4" onSubmit={handleSubmit(onReplySubmit)}>
             <div>
               <Label htmlFor="subject">Subject</Label>
-              <TextInput
-                id="subject"
-                value={selectedMessage?.subject || ""}
-                readOnly
-              />
+              <TextInput id="subject" {...register("subject")} readOnly />
             </div>
             <div>
               <Label htmlFor="reply">Reply</Label>
@@ -316,26 +410,22 @@ export default function AdminContactMessagesPage() {
                 rows={4}
                 placeholder="Write your response here..."
                 {...register("reply")}
-              />
-              {errors.reply && (
-                <p className="text-red-500 text-sm">{errors.reply.message}</p>
-              )}
-            </div>
-            <div>
-              <FileDropzone
-                label="Attachment (optional)"
-                onFilesSelected={() => {}}
+                color={errors.reply ? "failure" : undefined}
+                helperText={errors.reply?.message} 
+                disabled={isSubmitting}
               />
             </div>
             <div className="flex justify-end gap-3 mt-4">
               <Button
                 color="gray"
                 type="button"
-                onClick={() => setReplyModal(false)}
+                onClick={() => setReplyModal(false)} 
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button color="blue" type="submit">
+              <Button color="blue" type="submit" 
+              disabled={isSubmitting}>
                 Send Reply
               </Button>
             </div>

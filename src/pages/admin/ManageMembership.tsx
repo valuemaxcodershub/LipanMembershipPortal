@@ -253,7 +253,7 @@ export default function AdminMembershipPlansPage() {
           </>
         ) : (
           <>
-            {[...Array(3)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <Card key={i}>
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-10 w-full my-4" />

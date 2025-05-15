@@ -6,6 +6,7 @@ export interface UserType {
   email: string;
   phone: string;
   is_admin: boolean;
+  payment_status: "unpaid" | "paid" | "pending"
 }
 
 export type LoginData = {

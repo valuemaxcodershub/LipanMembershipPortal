@@ -10,30 +10,40 @@ import { Button } from "flowbite-react";
 import { PageMeta } from "../../utils/app/pageMetaValues";
 import { useState, useEffect } from "react";
 import { Skeleton } from "../../components/UI/Skeleton";
+import axios from "../../config/axios";
+import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
-    helpRequests: 0,
+    events: 0,
     resourcesUploaded: 0,
-    requestRate: 0,
+    // requestRate: 0,
     journalOverview: { active: 0, pending: 0, rejected: 0 },
   });
 
-  useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
+  const fetchStats = async () => {
+    setLoading(true)
+    try {
+      const { data } = await axios.get("/admin/stats/")
+      console.log(data)
       setStats({
-        totalUsers: 1245,
-        helpRequests: 87,
-        resourcesUploaded: 340,
-        requestRate: 18,
-        journalOverview: { active: 12, pending: 45, rejected: 3 },
+        totalUsers: data.total_users,
+        events: data.total_events,
+        resourcesUploaded: data.total_resources,
+        // requestRate: 18,
+        journalOverview: { active: data.approved_resources, pending: data.pending_resources, rejected: data.rejected_resources },
       });
       setLoading(false);
-    }, 8000); // Replace with actual API call logic
-    return () => clearTimeout(timer);
+    } catch (err: any) {
+      console.log(err)
+    }
+  }
+
+  useEffect(() => {
+    // Simulate API call
+    fetchStats();
   }, []);
 
   return (
@@ -77,7 +87,7 @@ const AdminDashboard = () => {
             </h1>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="hover:shadow-xl transition duration-300">
                 <div className="flex items-center justify-between">
                   <div>
@@ -93,9 +103,9 @@ const AdminDashboard = () => {
               <Card className="hover:shadow-xl transition duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500">Help Requests</p>
+                    <p className="text-gray-500">Total Events</p>
                     <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {stats.helpRequests}
+                      {stats.events}
                     </h3>
                   </div>
                   <HiOutlineMail className="text-4xl text-red-500" />
@@ -114,7 +124,7 @@ const AdminDashboard = () => {
                 </div>
               </Card>
 
-              <Card className="hover:shadow-xl transition duration-300">
+              {/* <Card className="hover:shadow-xl transition duration-300">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-500">Request Rate</p>
@@ -124,7 +134,7 @@ const AdminDashboard = () => {
                   </div>
                   <HiOutlineTrendingUp className="text-4xl text-purple-500" />
                 </div>
-              </Card>
+              </Card> */}
             </div>
 
             {/* Task Overview Section */}
@@ -160,19 +170,16 @@ const AdminDashboard = () => {
                 Quick Actions
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button color="blue" size="lg" className="w-full">
-                  Add New User
+                <Button as={Link} to="/admin/manage-users" color="blue" size="lg" className="w-full">
+                  Manage Users
                 </Button>
-                <Button color="green" size="lg" className="w-full">
+                <Button as={Link} to="/admin/manage-journals" color="green" size="lg" className="w-full">
                   Manage Resources
                 </Button>
-                <Button color="purple" size="lg" className="w-full">
-                  View Reports
-                </Button>
-                <Button color="red" size="lg" className="w-full">
+                <Button as={Link} to="/admin/user-reports" color="red" size="lg" className="w-full">
                   Resolve Requests
                 </Button>
-                <Button color="yellow" size="lg" className="w-full">
+                <Button as={Link} to="/admin/portal-settings" color="yellow" size="lg" className="w-full">
                   Update Settings
                 </Button>
               </div>

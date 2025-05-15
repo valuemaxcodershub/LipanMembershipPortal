@@ -35,6 +35,7 @@ import { toast } from "react-toastify";
 import SelectableSection from "../../components/UI/SelectionCard";
 import { getInitails } from "../../utils/app/text";
 import { BsCheckAll } from "react-icons/bs";
+import { errorHandler } from "../../utils/api/errors";
 // Mock Users
 const mockUsers = [
   {
@@ -86,7 +87,7 @@ const UserManagementPage = () => {
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
   const membership_type = searchParams.get("membership_type") || "";
-  const is_active = searchParams.get("page") || "";
+  const is_active = searchParams.get("is_active") || "";
 
   const [users, setUsers] = useState<User[]>([]);
   const [filtered, setFiltered] = useState<User[]>([]);
@@ -99,7 +100,7 @@ const UserManagementPage = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<null | {
-    type: "delete" | "suspend" | "approve";
+    type: "delete" | "statusChange" | "approve";
     user: User;
   }>(null);
   const [loading, setLoading] = useState(false);
@@ -179,22 +180,27 @@ const UserManagementPage = () => {
 
   const handleConfirmAction = async () => {
     if (confirmAction) {
+      const { user } = confirmAction;
       setActionLoading(true);
-      if (confirmAction.type === "delete") {
-        await axios.delete(`/accounts/users/${confirmAction.user.id}/`);
+      const url = `/accounts/users/${user.id}/`;
+      try {
+        if (confirmAction.type === "delete") {
+          await axios.delete(url);
+          toast.success(`User "${user.full_name}" deleted successfully!`);
+        } else if (confirmAction.type === "statusChange") {
+          await axios.patch(url, { is_active: !user.is_active });
+          toast.success(
+            `User "${user.full_name}" ${user.is_active ? "suspended" : "activated"} successfully!`
+          );
+        }
         fetchUsers();
-        toast.success(
-          `User "${confirmAction.user.full_name}" deleted successfully!`
-        );
-      } else if (confirmAction.type === "suspend") {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === confirmAction.user.id ? { ...u, status: "Suspended" } : u
-          )
-        );
+        setConfirmAction(null);
+      } catch (err: any) {
+        const errorMsg = errorHandler(err);
+        toast.error(errorMsg || "Action not completed, try again");
+      } finally {
+        setActionLoading(false);
       }
-      setActionLoading(false);
-      setConfirmAction(null);
     }
   };
 
@@ -387,7 +393,7 @@ const UserManagementPage = () => {
                           color="warning"
                           className="!w-fit"
                           onClick={() =>
-                            setConfirmAction({ type: "suspend", user })
+                            setConfirmAction({ type: "statusChange", user })
                           }
                         >
                           <FaBan className="h-5" />
@@ -397,10 +403,10 @@ const UserManagementPage = () => {
                           size="sm"
                           className="!bg-green-500 !w-fit"
                           onClick={() =>
-                            setConfirmAction({ type: "suspend", user })
+                            setConfirmAction({ type: "statusChange", user })
                           }
                         >
-                          <BsCheckAll />
+                          <BsCheckAll className="h-5" />
                         </Button>
                       )}
                       <Button

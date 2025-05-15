@@ -8,11 +8,11 @@ import { Id, toast } from "react-toastify";
 
 function PortalSettingsPage() {
   const [settings, setSettings] = useState({
-    allowRegistration: true,
-    allowContactAdmin: true,
-    allowJournalUpload: true,
-    requireJournalApproval: false,
+    allow_registration: true,
+    allow_contact_admin: true,
+    allow_journal_upload: true,
   });
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   const [areasOfInterest, setAreasOfInterest] = useState<any[]>([]);
   const [levels, setLevels] = useState<any[]>([]);
@@ -23,8 +23,30 @@ function PortalSettingsPage() {
 
   type SettingsKey = keyof typeof settings;
 
-  const handleToggle = (key: SettingsKey) => {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleToggle = async (key: SettingsKey) => {
+    const toastId = toast.loading("Updating settings...", {
+      position: "top-center",
+    });
+    try {
+      const updatedValue = !settings[key];
+      setSettings((prev) => ({ ...prev, [key]: updatedValue }));
+      await axios.put("/permissions/", { [key]: updatedValue });
+      toast.update(toastId, {
+        render: "Settings updated successfully!",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.update(toastId, {
+        render: "Failed to update settings. Please try again.",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      setSettings((prev) => ({ ...prev, [key]: !settings[key] }));
+    }
   };
 
   const addItem = async (type: string) => {
@@ -79,12 +101,15 @@ function PortalSettingsPage() {
       position: "top-center",
     });
     try {
-      const [levelsResponse, interestsResponse] = await Promise.all([
-        axios.get("/levels"),
-        axios.get("/interests"),
-      ]);
+      const [levelsResponse, interestsResponse, permissionsResponse] =
+        await Promise.all([
+          axios.get("/levels/"),
+          axios.get("/interests/"),
+          axios.get("/permissions/"),
+        ]);
       setLevels(levelsResponse.data);
       setAreasOfInterest(interestsResponse.data);
+      setSettings(permissionsResponse.data);
       toast.update(toastId, {
         render: "Data fetched successfully!",
         type: "success",
@@ -92,6 +117,7 @@ function PortalSettingsPage() {
         autoClose: 3000,
       });
     } catch (err) {
+      console.error(err);
       toast.update(toastId, {
         render: "Failed to fetch data. Please try again.",
         type: "error",
@@ -299,8 +325,8 @@ function PortalSettingsPage() {
             </Label>
             <Switch
               id="allow-registration"
-              checked={settings.allowRegistration}
-              onChange={() => handleToggle("allowRegistration")}
+              checked={settings.allow_registration}
+              onChange={() => handleToggle("allow_registration")}
             />
           </div>
         </Card>
@@ -319,8 +345,8 @@ function PortalSettingsPage() {
             </Label>
             <Switch
               id="allow-contact-admin"
-              checked={settings.allowContactAdmin}
-              onChange={() => handleToggle("allowContactAdmin")}
+              checked={settings.allow_contact_admin}
+              onChange={() => handleToggle("allow_contact_admin")}
             />
           </div>
         </Card>
@@ -336,11 +362,11 @@ function PortalSettingsPage() {
                 Allow Journal Uploads
               </Label>
               <Switch
-                checked={settings.allowJournalUpload}
-                onChange={() => handleToggle("allowJournalUpload")}
+                checked={settings.allow_journal_upload}
+                onChange={() => handleToggle("allow_journal_upload")}
               />
             </div>
-            <div className="flex justify-between items-center">
+            {/* <div className="flex justify-between items-center">
               <Label className="text-gray-700 dark:text-gray-300">
                 Require Admin Approval for Journals
               </Label>
@@ -348,7 +374,7 @@ function PortalSettingsPage() {
                 checked={settings.requireJournalApproval}
                 onChange={() => handleToggle("requireJournalApproval")}
               />
-            </div>
+            </div> */}
           </div>
         </Card>
       </div>

@@ -65,18 +65,18 @@ export const contactAttachmentformats = [
   "image/png",
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/x-zip-compressed"
 ];
 
 export const contactAdminSchema = yup.object().shape({
   subject: yup.string().required("Subject is required"),
-  // email: yup.string().email("Invalid email").required("Email is required"),
   message: yup.string().required("Message is required"),
   attachment: yup
-    .mixed()
-    .test("fileSize", "The file is too large", (value: any) => {
-      return value?.[0]?.size <= 5_000_000 || !value?.length;
+    .mixed<FileList>()
+    .test("fileSize", "The file is too large: Maximun of 5MB", (value) => {
+      return (value?.[0]?.size ?? 0) <= 10_000_000 || !value?.length;
     })
-    .test("type", "Only image, pdf or docx allowed", (value: any) => {
+    .test("type", "Only image (JPEG, PNG), pdf, zip or docx allowed", (value) => {
       return (
         !value?.length || contactAttachmentformats.includes(value?.[0]?.type)
       );

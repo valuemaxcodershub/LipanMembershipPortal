@@ -2,15 +2,12 @@ import { createContext } from "react";
 
 export interface PaymentContextType {
   isPaymentModalOpen: boolean;
+  openMembershipModal: () => void;
   openPaymentModal: () => void;
+  closeMembershipModal: () => void;
   closePaymentModal: () => void;
-  selectedMembership: string | null;
-  setSelectedMembership: (membership: string) => void;
   isProcessingPayment: boolean;
-  processPayment: (paymentMethod: string, amount: number) => Promise<void>;
-  paymentStatus: "pending" | "success" | "failed" | null;
-  userMembershipStatus: boolean;
-  setUserMembershipStatus: (status: boolean) => void;
+  processPayment: (data: any) => Promise<void>;
 }
 
 export const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
