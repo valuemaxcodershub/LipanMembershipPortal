@@ -7,6 +7,7 @@ import { UserType } from "../../contexts/createContexts/auth";
 import { BsCalendarDay, BsCalendarMonth } from "react-icons/bs";
 import axios from "../../config/axios";
 import { Skeleton } from "./Skeleton";
+import { FaCalendar } from "react-icons/fa";
 
 const membershipPlans: MembershipPlan[] = [
   {
@@ -48,7 +49,7 @@ export const MembershipSelectionModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (plan: MembershipPlan) => void;
+  onSelect: (membership: MembershipPlan & { plan: string }) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<keyof typeof keyMap>("0");
   const [isFetching, setIsFetching] = useState(true);
@@ -58,7 +59,7 @@ export const MembershipSelectionModal = ({
   );
 
   const fetchMembership = async () => {
-    setIsFetching(true)
+    setIsFetching(true);
     try {
       const { data } = await axios.get("/membership/");
       const plans = data.results.map((plan: any) => ({
@@ -97,28 +98,28 @@ export const MembershipSelectionModal = ({
       </Modal.Header>
       <Modal.Body className="relative">
         {isFetching ? (
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <div className="p-4 space-y-2">
-                <Skeleton className="h-10 w-full my-4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-              <div className="p-4 space-y-2 mt-2">
-                <Skeleton className="h-2 w-4/4" />
-                <Skeleton className="h-2 w-2/4" />
-                <Skeleton className="h-2 w-3/4" />
-              </div>
-            </Card>
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-10 w-full my-4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="p-4 space-y-2 mt-2">
+                  <Skeleton className="h-2 w-4/4" />
+                  <Skeleton className="h-2 w-2/4" />
+                  <Skeleton className="h-2 w-3/4" />
+                </div>
+              </Card>
+            ))}
           </div>
         ) : (
           <>
             {" "}
-            <div className="z-50 overflow-x-auto w-full max-w-[300px] mx-auto sticky top-2">
+            <div className="z-50 overflow-x-auto w-full max-w-[400px] mx-auto sticky top-2">
               <Tabs
                 aria-label="Full width tabs"
                 style="fullWidth"
@@ -126,33 +127,35 @@ export const MembershipSelectionModal = ({
                   setActiveTab(String(tab) as keyof typeof keyMap)
                 }
               >
-                <TabItem active title="Monthly" icon={BsCalendarDay} />
-                <TabItem title="Yearly" icon={BsCalendarMonth} />
+                <TabItem active title="Monthly" icon={BsCalendarMonth} />
+                <TabItem title="Yearly" icon={FaCalendar} />
               </Tabs>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {membershipsFilter.map((plan) => (
+              {membershipsFilter.map((membShip) => (
                 <Card
-                  key={plan.name}
+                  key={membShip.name}
                   className="p-6 shadow-xl border-2 border-blue-100 hover:border-blue-500 transition-all duration-200"
                 >
                   <p className="text-2xl text-blue-600 font-semibold mb-2">
-                    &#8358;{plan.price}{" "}
+                    &#8358;{membShip.price}{" "}
                     <span className="text-sm text-black dark:text-white">
                       /{keyMap[activeTab]}
                     </span>
                   </p>
                   <h3 className="text-xl font-bold text-blue-700">
-                    {plan.name}
+                    {membShip.name}
                   </h3>
                   <ul className="text-sm text-gray-700 dark:text-gray-100 mt-2 list-disc pl-4 h-[100px] max-h-[100px] overflow-y-auto">
-                    {plan.benefits.map((benefit, index) => (
+                    {membShip.benefits.map((benefit, index) => (
                       <li key={index}>{benefit}</li>
                     ))}
                   </ul>
                   <Button
                     className="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold"
-                    onClick={() => onSelect(plan)}
+                    onClick={() =>
+                      onSelect({ ...membShip, plan: `${keyMap[activeTab]}ly` })
+                    }
                   >
                     Select Plan
                   </Button>
@@ -174,7 +177,7 @@ export const PaymentModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  membership: MembershipPlan | null;
+  membership: MembershipPlan & { plan: string };
   userInfo: UserType;
 }) => {
   if (!membership) return null;
@@ -187,12 +190,12 @@ export const PaymentModal = ({
         </span>
       </Modal.Header>
       <Modal.Body>
-        <div className="bg-white border rounded-lg p-6 shadow-md font-mono text-sm space-y-6">
+        <Card className="font-mono space-y-6">
           <div className="border-b pb-4">
             <h2 className="text-base font-semibold text-blue-600 mb-2">
               Billed To
             </h2>
-            <div className="space-y-1">
+            <div className="space-y-1 dark:text-gray-200">
               <p>
                 <span className="font-medium">Full Name:</span>{" "}
                 {userInfo.full_name}
@@ -207,9 +210,12 @@ export const PaymentModal = ({
             <h2 className="text-base font-semibold text-blue-600 mb-2">
               Membership Details
             </h2>
-            <div className="space-y-1">
+            <div className="space-y-1 dark:text-gray-200">
               <p>
-                <span className="font-medium">Type:</span> {membership.name}
+                <span className="font-medium">Name:</span> {membership.name}
+              </p>
+              <p>
+                <span className="font-medium">Type:</span> {membership.plan}
               </p>
               <p>
                 <span className="font-medium">Amount:</span> ₦
@@ -219,7 +225,7 @@ export const PaymentModal = ({
           </div>
 
           <div className="pt-4 border-b">
-            <h2 className="text-base font-semibold text-gray-800 mb-2">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-500 mb-2">
               Total
             </h2>
             <div className="text-lg font-bold text-blue-600">
@@ -239,9 +245,11 @@ export const PaymentModal = ({
               email={userInfo.email}
               name={userInfo.full_name}
               description={`Payment for LiPAN Membership (${membership.name})`}
+              plan={membership.plan}
+              membership={membership.id}
             />
           </div>
-        </div>
+        </Card>
       </Modal.Body>
     </Modal>
   );

@@ -8,11 +8,15 @@ const PaystackPayment = ({
   email,
   name,
   description = "LiPAN Payment",
+  membership,
+  plan,
 }: {
   amount: number;
   email: string;
   name: string;
   description: string;
+    plan: string;
+    membership: number;
 }) => {
   const { processPayment, isProcessingPayment } = usePayment();
   const config = {
@@ -28,6 +32,16 @@ const PaystackPayment = ({
           variable_name: "description",
           value: description,
         },
+        {
+          display_name: "Plan type",
+          variable_name: "plan",
+          value: plan,
+        },
+        {
+          display_name: "Membership Id",
+          variable_name: "membership",
+          value: membership,
+        },
       ],
     },
   };
@@ -42,6 +56,8 @@ const PaystackPayment = ({
       amount,
       status: ref.status,
       description,
+      membership_type: membership,
+      plan
     });
   };
 

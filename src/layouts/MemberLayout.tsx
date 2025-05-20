@@ -31,8 +31,7 @@ function DashboardLayout() {
   const setButtonsState = () => {
     if (user) {
       setIsDisabled(() =>
-        // ["unpaid", "pending"].includes(user.payment_status) ? true : false
-        ["unpaid", "pending"].includes("pending") ? true : false
+        ["unpaid", "pending"].includes(user.payment_status) ? true : false
       );
     }
   };

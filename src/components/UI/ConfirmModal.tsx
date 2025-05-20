@@ -12,8 +12,8 @@ type Colors = FlowbiteStateColors & FlowbiteGradientDuoToneColors;
 type ConfirmColors = Pick<Colors, "failure" | "warning" | "success" | "info">;
 interface ConfirmationModalProps {
   open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
+  onClose?: () => void;
+  onConfirm?: () => void;
   title?: React.ReactNode;
   message?: React.ReactNode;
   confirmText?: React.ReactNode;
@@ -28,8 +28,8 @@ interface ConfirmationModalProps {
 
 const ConfirmationModal = ({
   open,
-  onClose,
-  onConfirm,
+  onClose = ()=> {},
+  onConfirm = ()=> {},
   title = "Are you sure?",
   message = "This action cannot be undone.",
   confirmText = "Confirm",

@@ -105,6 +105,7 @@ function SignInPage() {
       resetField("password");
     } finally {
       setLoading(false);
+      captchaRef.current?.refreshCaptcha();
     }
   };
 

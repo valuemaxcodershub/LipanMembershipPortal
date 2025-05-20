@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -6,6 +6,8 @@ import {
   Modal,
   FileInput,
   TextInput,
+  Textarea,
+  Progress,
 } from "flowbite-react";
 import {
   HiOutlineDocumentText,
@@ -17,32 +19,106 @@ import {
 import { FiFilter } from "react-icons/fi";
 import { FileDropzone } from "../../components/UI/FiledropZone";
 import { PageMeta } from "../../utils/app/pageMetaValues";
+import axios from "../../config/axios";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
+import MultiSelect from "../../components/UI/MultiSelect";
+import { formatDate } from "../../utils/app/time";
+import { Skeleton } from "../../components/UI/Skeleton";
+import { FaBookOpen } from "react-icons/fa";
+import ConfirmationModal from "../../components/UI/ConfirmModal";
+import { BsDatabase } from "react-icons/bs";
+import { useDownloadFile } from "../../utils/api/download";
 
 const sampleJournals = [
   {
     id: 1,
     title: "Literacy Engagement in Rural Areas",
-    format: "PDF",
-    date: "2024-09-01",
+    file_type: "PDF",
+    created_at: "2024-09-01",
     tags: ["Community", "Literacy"],
   },
   {
     id: 2,
     title: "Teacher Training Impact Report",
-    format: "DOCX",
-    date: "2024-07-15",
+    file_type: "DOCX",
+    created_at: "2024-07-15",
     tags: ["Professional Development"],
   },
 ];
 
 const allTags = ["All", "Community", "Literacy", "Professional Development"];
 
+const newJournalschema = yup.object({
+  title: yup.string().required("Title is required"),
+  description: yup.string().required("Description is required"),
+  owner_name: yup.string().default("Admin"),
+  tags: yup
+    .array()
+    .of(yup.number().required("tag is required"))
+    .min(1, "At least one tag is required"),
+  file: yup.mixed().required("File is required"),
+});
+
 const MyJournalPage = () => {
+  const {downloadFile, downloading, progress} = useDownloadFile()
+  const {
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setValue,
+    register,
+    watch,
+    reset,
+  } = useForm({
+    resolver: yupResolver(newJournalschema),
+    defaultValues: {
+      file: undefined,
+    },
+  });
+
   const [selectedTag, setSelectedTag] = useState("All");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [filteredJournals, setFilteredJournals] = useState(sampleJournals);
-  const [uploadedFile, setUploadedFile] = useState<File[] | null>(null);
+  // const [uploadedFile, setUploadedFile] = useState<File[] | null>(null);
   const [tagsInput, setTagsInput] = useState("");
+
+  const uploadedFile = watch("file") as FileList;
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchValue, setSearchValue] = useState("");
+  const [debounceValue, setDebounceValue] = useState("");
+  const [isActionLoading, setActionLoading] = useState(false);
+  const [openDownload, setOpenDownload] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [selectedJournal, setSelectedJournal] = useState<any>(null);
+  const [interests, setInterests] = useState<any[]>([]);
+
+  const handleUpload = async (data: any) => {
+    const { file, tags, ...otherData } = data;
+    const formData = new FormData();
+    if (file) {
+      formData.append("file", data.file[0]);
+    }
+    tags.forEach((tag: any) => {
+      formData.append("tags", tag);
+    });
+    Object.entries(otherData).forEach(([key, value]) => {
+      formData.append(key, value as string);
+    });
+    try {
+      await axios.post("/user/resources/", formData);
+      setUploadModalOpen(false);
+      toast.success("Journal uploaded successfully!");
+      reset();
+      fetchMyJournals();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(
+        `Failed to upload journal. ${error.response.data.detail || error.message} `
+      );
+    }
+  };
 
   const handleTagFilter = (tag: string) => {
     setSelectedTag(tag);
@@ -55,19 +131,46 @@ const MyJournalPage = () => {
     }
   };
 
-  const parseTags = (input: string) => {
-    return input
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag !== "");
-  };
+  
 
-  const handleFiles = (files: FileList | File[] | null) => {
-    if (files) {
-      console.log("Selected files:", Array.from(files));
-      setUploadedFile(Array.from(files));
+  const handleFiles = (files: File[] | FileList | null) => {
+    if (files && files.length > 0) {
+      setValue("file", files);
     }
   };
+
+  const handleDownload = async(journal: any) => {
+    setSelectedJournal(journal)
+    console.log(journal.file.split("/"))
+    await downloadFile(journal.id, journal.file.split("/")[3]);
+  }
+
+  const fetchMyJournals = async () => {
+    setIsFetching(true);
+    try {
+      // const {data} = await axios.get("/user/resources/")
+      const [resourceResponse, interesetResponse] = await Promise.all([
+        axios.get("/user/resources/"),
+        axios.get("/interests/"),
+      ]);
+      console.log("this is ", resourceResponse.data);
+      setFilteredJournals(resourceResponse.data.results);
+      setTotalPages(resourceResponse.data.total_pages);
+      setInterests(
+        interesetResponse.data.map((int: any) => ({
+          label: int.name,
+          value: int.id,
+        }))
+      );
+      setIsFetching(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyJournals();
+  }, []);
 
   return (
     <>
@@ -89,8 +192,12 @@ const MyJournalPage = () => {
               documents.
             </p>
           </div>
-          <Button onClick={() => setUploadModalOpen(true)} color="blue">
-            <HiPlus className="mr-2" /> Upload Journal
+          <Button
+            disabled={isFetching}
+            onClick={() => setUploadModalOpen(true)}
+            color="blue"
+          >
+            <HiPlus className="mr-2 h-5" /> Upload Journal
           </Button>
         </div>
 
@@ -102,6 +209,7 @@ const MyJournalPage = () => {
             {allTags.map((tag) => (
               <button
                 key={tag}
+                disabled={isFetching}
                 onClick={() => handleTagFilter(tag)}
                 className={`px-3 py-1 rounded-full border text-sm transition-all ${
                   selectedTag === tag
@@ -116,7 +224,26 @@ const MyJournalPage = () => {
         </div>
 
         <div className="min-h-[200px]">
-          {filteredJournals.length > 0 ? (
+          {isFetching ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-10 w-full my-4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                  <div className="p-4 space-y-2 mt-2">
+                    <Skeleton className="h-2 w-4/4" />
+                    <Skeleton className="h-2 w-2/4" />
+                    <Skeleton className="h-2 w-3/4" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : filteredJournals.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredJournals.map((journal) => (
                 <Card
@@ -127,41 +254,39 @@ const MyJournalPage = () => {
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                       {journal.title}
                     </h3>
-                    <span className="px-2 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                      {journal.format}
+                    <span className="px-2 font-bold py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      {journal.file_type.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Uploaded: {journal.date}
+                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                    Uploaded: {formatDate(journal.created_at)}
                   </p>
                   <div className="flex gap-2 mt-2">
-                    {journal.tags.map((tag, i) => (
+                    {journal.tags.map((tag: any, i) => (
                       <span
                         key={i}
                         className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200"
                       >
-                        {tag}
+                        {tag.name}
                       </span>
                     ))}
                   </div>
                   <div className="mt-4 flex gap-3">
-                    <Button size="sm" color="light">
+                    {/* <Button size="sm" color="light">
                       <HiEye className="mr-1" /> View
-                    </Button>
-                    <Button size="sm" color="gray">
-                      <HiDownload className="mr-1" /> Download
+                    </Button> */}
+                    <Button size="sm" color="gray" onClick={()=> handleDownload(journal)}>
+                      <HiDownload className="mr-1 h-5" /> Download
                     </Button>
                   </div>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-              <HiOutlineDocumentText className="mx-auto text-4xl mb-2" />
-              <p className="text-lg font-medium">
-                No journals found for selected tag.
-              </p>
-            </div>
+            <Card className="text-center text-gray-500 dark:text-gray-400 py-12">
+              <FaBookOpen className="mx-auto mb-2 text-blue-600" size={60} />
+              <p className="text-lg font-medium">No journals found.</p>
+            </Card>
           )}
         </div>
 
@@ -180,30 +305,60 @@ const MyJournalPage = () => {
         {/* Upload Modal */}
         <Modal
           show={uploadModalOpen}
-          onClose={() => setUploadModalOpen(false)}
+          onClose={() => !isSubmitting && setUploadModalOpen(false)}
           size="2xl"
           position="center"
         >
           <Modal.Header>Upload New Journal</Modal.Header>
           <Modal.Body>
-            <form className="space-y-5">
+            <form onSubmit={handleSubmit(handleUpload)} className="space-y-5">
               <div>
                 <Label htmlFor="title" value="Journal Title" />
-                <TextInput id="title" required placeholder="Enter title" />
-              </div>
-              <div>
-                <Label htmlFor="tags" value="Tags (comma separated)" />
                 <TextInput
-                  id="tags"
-                  placeholder="e.g. Literacy, Training"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
+                  disabled={isSubmitting}
+                  id="title"
+                  placeholder="Enter title"
+                  {...register("title")}
+                  color={errors.title ? "failure" : undefined}
+                  helperText={errors.title?.message}
                 />
               </div>
-              <FileDropzone onFilesSelected={handleFiles} />
-              {uploadedFile && uploadedFile.length > 0 && (
+              <div>
+                <Label htmlFor="description" value="Journal Description" />
+                <Textarea
+                  disabled={isSubmitting}
+                  id="description"
+                  placeholder="Provide a brief Description / Explanatory of the journal"
+                  {...register("description")}
+                  rows={6}
+                  color={errors.description ? "failure" : undefined}
+                  helperText={errors.description?.message}
+                />
+              </div>
+              <div>
+                <Label value="Add Interest / Category tags to upload" />
+                <MultiSelect<any>
+                  labelKey="label"
+                  valueKey="value"
+                  options={interests}
+                  onChange={(selected) => {
+                    const selectedValues = selected.map((item: any) =>
+                      Number(item.value)
+                    );
+                    setValue("tags", selectedValues);
+                  }}
+                />
+                {errors.tags && (
+                  <p className="text-sm text-red-500">{errors.tags.message}</p>
+                )}
+              </div>
+              <FileDropzone
+                label="Select Upload"
+                onFilesSelected={handleFiles}
+              />
+              {uploadedFile && Array.from(uploadedFile).length > 0 && (
                 <ul className="space-y-2">
-                  {uploadedFile.map((file) => (
+                  {Array.from(uploadedFile).map((file) => (
                     <li
                       key={file.name}
                       className="flex flex-wrap items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded-md"
@@ -223,12 +378,43 @@ const MyJournalPage = () => {
                   ))}
                 </ul>
               )}
-              <Button type="submit" color="blue" className="w-full">
+              <Button
+                disabled={isSubmitting}
+                isProcessing={isSubmitting}
+                fullSized
+                type="submit"
+                color="blue"
+                className="w-full"
+              >
                 Upload Journal
               </Button>
             </form>
           </Modal.Body>
         </Modal>
+
+        <ConfirmationModal
+          // onClose={() => !downloading && setOpenDownload(false)}
+          // onConfirm={handleConfirmAction}
+          open={downloading}
+          title={"Downloading Journal Upload"}
+          message={
+            <div className="mt-4">
+              <p className="!text-left text-sm text-gray-700 dark:text-gray-400">
+                Downloading <b>{selectedJournal?.title}...</b>
+              </p>
+              <Progress
+                progress={progress}
+                progressLabelPosition="inside"
+                size="lg"
+                labelProgress
+              />
+            </div>
+          }
+          icon={BsDatabase}
+          theme={"info"}
+          showButtons={false}
+          loading={isActionLoading}
+        />
       </div>
     </>
   );

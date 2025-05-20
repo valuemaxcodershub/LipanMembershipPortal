@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -14,11 +14,21 @@ import {
   HiOutlineLocationMarker,
 } from "react-icons/hi";
 import { PageMeta } from "../../utils/app/pageMetaValues";
-
+import axios from "../../config/axios";
+import { formatDate } from "../../utils/app/time";
+type Event = {
+  id: number;
+  title: string;
+  description: string;
+  is_featured: boolean;
+  date: string;
+  tags: string[];
+  location: string;
+};
 const upcomingEvents = [
   {
     id: 1,
-    name: "Community Volunteer Workshop",
+    title: "Community Volunteer Workshop",
     date: "2025-04-10 09:00 AM",
     location: "Community Center, Main Street",
     tags: ["Workshop", "Volunteer"],
@@ -28,7 +38,7 @@ const upcomingEvents = [
   },
   {
     id: 2,
-    name: "Tech Innovation Seminar",
+    title: "Tech Innovation Seminar",
     date: "2025-04-15 02:00 PM",
     location: "Zoom Meeting",
     tags: ["Seminar", "Tech"],
@@ -38,7 +48,7 @@ const upcomingEvents = [
   },
   {
     id: 3,
-    name: "Leadership Training",
+    title: "Leadership Training",
     date: "2025-04-20 10:00 AM",
     location: "Leadership Hall",
     tags: ["Training", "Leadership"],
@@ -61,14 +71,12 @@ const eventTags = [
 const UpcomingEventsPage = () => {
   const [selectedTag, setSelectedTag] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredEvents, setFilteredEvents] = useState(upcomingEvents);
-  const [featuredEvent] = useState(upcomingEvents);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>(upcomingEvents);
+  const [featuredEvents, setfeaturedEvents] = useState<Event[]>(upcomingEvents);
 
   const [viewDetailsModal, setViewDetailsModal] = useState(false);
   const [registerModal, setRegisterModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<
-    (typeof upcomingEvents)[0] | null
-  >(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const handleTagFilter = (tag: string) => {
     setSelectedTag(tag);
@@ -83,24 +91,39 @@ const UpcomingEventsPage = () => {
 
   const handleSearch = () => {
     const lowercasedSearchTerm = searchTerm.toLowerCase();
-    setFilteredEvents(
-      upcomingEvents.filter(
-        (event) =>
-          event.name.toLowerCase().includes(lowercasedSearchTerm) ||
-          event.location.toLowerCase().includes(lowercasedSearchTerm)
+    setFilteredEvents((prev) =>
+      prev.filter((event) =>
+        [event.title, event.location].some((field) =>
+          field.toLowerCase().includes(lowercasedSearchTerm)
+        )
       )
     );
   };
 
-  const openDetails = (event: (typeof upcomingEvents)[0]) => {
+  const openDetails = (event: Event) => {
     setSelectedEvent(event);
     setViewDetailsModal(true);
   };
 
-  const openRegister = (event: (typeof upcomingEvents)[0]) => {
+  const openRegister = (event: Event) => {
     setSelectedEvent(event);
     setRegisterModal(true);
   };
+
+  const fetchMyEvents = async () => {
+    try {
+      const { data } = await axios.get("/events/me/?type=upcoming");
+      console.log(data);
+      setFilteredEvents(data);
+      setfeaturedEvents(data.filter((evnt: Event) => evnt.is_featured));
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyEvents();
+  }, []);
 
   return (
     <>
@@ -122,21 +145,21 @@ const UpcomingEventsPage = () => {
             </p>
           </div>
 
-          {featuredEvent && (
+          {featuredEvents && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                 Featured Event
               </h2>
               <div className="h-56 sm:h-64 xl:h-80 2xl:h-96">
                 <Carousel pauseOnHover>
-                  {featuredEvent.map((evnt, index) => (
+                  {featuredEvents.map((evnt, index) => (
                     <Card
                       key={index}
                       className="bg-blue-100 dark:bg-blue-900 max-w-5xl m-auto"
                     >
                       <div className="flex flex-col items-center">
                         <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-                          {evnt.name}
+                          {evnt.title}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                           {evnt.date}
@@ -213,10 +236,10 @@ const UpcomingEventsPage = () => {
                 >
                   <div className="flex flex-col items-center">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                      {event.name}
+                      {event.title}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                      {event.date}
+                      {formatDate(event.date)}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       {event.location}
@@ -263,7 +286,7 @@ const UpcomingEventsPage = () => {
 
       {/* View Details Modal */}
       <Modal show={viewDetailsModal} onClose={() => setViewDetailsModal(false)}>
-        <Modal.Header>{selectedEvent?.name}</Modal.Header>
+        <Modal.Header>{selectedEvent?.title}</Modal.Header>
         <Modal.Body>
           <div className="space-y-2">
             <p>
@@ -288,7 +311,7 @@ const UpcomingEventsPage = () => {
 
       {/* Register Modal */}
       <Modal show={registerModal} onClose={() => setRegisterModal(false)}>
-        <Modal.Header>Register for {selectedEvent?.name}</Modal.Header>
+        <Modal.Header>Register for {selectedEvent?.title}</Modal.Header>
         <Modal.Body>
           <form className="space-y-4">
             <div>

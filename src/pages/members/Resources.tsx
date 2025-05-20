@@ -1,66 +1,82 @@
-import { useState } from "react";
-import { Card, Button, Label, Select, TextInput, Badge } from "flowbite-react";
+import { useEffect, useState } from "react";
+import {
+  Card,
+  Button,
+  Label,
+  Select,
+  TextInput,
+  Badge,
+  Progress,
+} from "flowbite-react";
 import {
   HiOutlineDownload,
   HiOutlineDocumentSearch,
   HiOutlineEye,
 } from "react-icons/hi";
-import { BsJournalBookmark, BsInfoCircle } from "react-icons/bs";
+import { BsJournalBookmark, BsInfoCircle, BsDatabase } from "react-icons/bs";
 import { PageMeta } from "../../utils/app/pageMetaValues";
+import axios from "../../config/axios";
+import { dataUrlToFile } from "../../utils/app/text";
+import { useDownloadFile } from "../../utils/api/download";
+import ConfirmationModal from "../../components/UI/ConfirmModal";
+import { UserType } from "../../contexts/createContexts/auth";
+import { formatDate } from "../../utils/app/time";
+import { Skeleton } from "../../components/UI/Skeleton";
 
 type Resource = {
   id: number;
   title: string;
-  type: string;
-  author: string;
-  date: string;
-  fileUrl: string;
-  tags: string[];
+  file_type: string;
+  owner: Partial<UserType>;
+  created_at: string;
+  filename: string;
+  tags: any[];
 };
 
-const mockResources: Resource[] = [
-  {
-    id: 1,
-    title: "Understanding Mental Health in Youth",
-    type: "Article",
-    author: "Dr. Elaine Rivers",
-    date: "2025-03-01",
-    fileUrl: "#",
-    tags: ["Mental Health", "Youth", "Awareness"],
-  },
-  {
-    id: 2,
-    title: "Annual Volunteer Impact Journal 2024",
-    type: "Journal",
-    author: "Community Research Org",
-    date: "2024-12-20",
-    fileUrl: "#",
-    tags: ["Community", "Impact", "Volunteers"],
-  },
-  {
-    id: 3,
-    title: "Nutrition & Wellness for Families",
-    type: "eBook",
-    author: "Healthy Living Institute",
-    date: "2025-02-10",
-    fileUrl: "#",
-    tags: ["Wellness", "Nutrition", "Family Health"],
-  },
-];
+
 
 const resourceTypes = ["All", "Article", "Journal", "eBook", "Video"];
 
 const MyResourcesPage = () => {
+  const { downloadFile, downloading, progress } = useDownloadFile();
+
   const [selectedType, setSelectedType] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [selectedResource, setSelectedResource] = useState<any>(null);
 
-  const filteredResources = mockResources.filter((res) => {
-    const matchType = selectedType === "All" || res.type === selectedType;
-    const matchSearch =
-      res.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      res.author.toLowerCase().includes(searchTerm.toLowerCase());
+  const [isFetching, setIsFetching] = useState(true);
+
+  const filteredResources = resources.filter((res) => {
+    const matchType = selectedType === "All" || res.file_type === selectedType;
+    const matchSearch = [res.title, res.owner.full_name].some((field) =>
+      field?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return matchType && matchSearch;
   });
+
+  const fetchAvaliableResources = async () => {
+    setIsFetching(true);
+    try {
+      const { data } = await axios.get("/user/resources/?type=all");
+      setResources(data.results);
+      console.log(data);
+      setIsFetching(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvaliableResources();
+  }, []);
+
+  const handleDownload = async (resource: any) => {
+    setSelectedResource(resource);
+    console.log(resource.file.split("/"));
+    await downloadFile(resource.id, resource.file.split("/")[3]);
+  };
 
   return (
     <>
@@ -91,7 +107,7 @@ const MyResourcesPage = () => {
               <BsJournalBookmark className="text-2xl mb-2" />
               <h4 className="text-xl font-bold">Total Resources</h4>
               <p className="text-sm">
-                You have access to {mockResources.length} resources
+                You have access to {resources?.length} resources
               </p>
             </div>
           </Card>
@@ -115,7 +131,7 @@ const MyResourcesPage = () => {
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row md:items-end gap-6">
-          <div className="w-full md:w-1/3">
+          {/* <div className="w-full md:w-1/3">
             <Label htmlFor="type" value="Filter by Type" />
             <Select
               id="type"
@@ -126,12 +142,12 @@ const MyResourcesPage = () => {
                 <option key={type}>{type}</option>
               ))}
             </Select>
-          </div>
+          </div> */}
           <div className="w-full md:w-2/3">
             <Label htmlFor="search" value="Search Resources" />
             <TextInput
               id="search"
-              placeholder="Search by title or author"
+              placeholder="Search by title or owner"
               icon={HiOutlineDocumentSearch}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -141,7 +157,24 @@ const MyResourcesPage = () => {
 
         {/* Resource Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredResources.length > 0 ? (
+          {isFetching ? (
+            [...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-10 w-full my-4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="p-4 space-y-2 mt-2">
+                  <Skeleton className="h-2 w-4/4" />
+                  <Skeleton className="h-2 w-2/4" />
+                  <Skeleton className="h-2 w-3/4" />
+                </div>
+              </Card>
+            ))
+          ) : filteredResources.length > 0 ? (
             filteredResources.map((res) => (
               <Card
                 key={res.id}
@@ -152,25 +185,26 @@ const MyResourcesPage = () => {
                     {res.title}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {res.type} · {res.date}
+                    {res.file_type.toUpperCase()} · {formatDate(res.created_at)}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    By {res.author}
+                    By {res.owner.full_name}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {res.tags.map((tag) => (
-                      <Badge key={tag} color="info" className="text-xs">
-                        {tag}
+                      <Badge key={tag.id} color="info" className="text-xs">
+                        {tag.name}
                       </Badge>
                     ))}
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button color="blue" size="sm" href={res.fileUrl}>
-                    <HiOutlineDownload className="mr-2" /> Download
-                  </Button>
-                  <Button color="gray" size="sm" href={res.fileUrl}>
-                    <HiOutlineEye className="mr-2" /> Preview
+                  <Button
+                    color="blue"
+                    size="sm"
+                    onClick={() => handleDownload(res)}
+                  >
+                    <HiOutlineDownload className="mr-2 h-5" /> Download
                   </Button>
                 </div>
               </Card>
@@ -183,7 +217,7 @@ const MyResourcesPage = () => {
         </div>
 
         {/* Recent Access Activity */}
-        <div>
+        {/* <div>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
             🕘 Recently Accessed
           </h2>
@@ -201,8 +235,29 @@ const MyResourcesPage = () => {
               10, 2025
             </li>
           </ul>
-        </div>
+        </div> */}
       </div>
+
+      <ConfirmationModal
+        open={downloading}
+        title={"Downloading Journal Upload"}
+        message={
+          <div className="mt-4">
+            <p className="!text-left text-sm text-gray-700 dark:text-gray-400">
+              Downloading <b>{selectedResource?.title}...</b>
+            </p>
+            <Progress
+              progress={progress}
+              progressLabelPosition="inside"
+              size="lg"
+              labelProgress
+            />
+          </div>
+        }
+        icon={BsDatabase}
+        theme={"info"}
+        showButtons={false}
+      />
     </>
   );
 };

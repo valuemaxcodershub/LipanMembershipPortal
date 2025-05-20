@@ -15,8 +15,9 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [isMembershipModalOpen, setIsMembershipModalOpen] =
     useState<boolean>(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
-  const [selectedMembership, setSelectedMembership] =
-    useState<MembershipPlan | null>(null);
+  const [selectedMembership, setSelectedMembership] = useState<
+    (MembershipPlan & { plan: string }) | null
+  >(null);
   const [isProcessingPayment, setIsProcessingPayment] =
     useState<boolean>(false);
 
@@ -26,7 +27,7 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const openPaymentModal = () => setIsPaymentModalOpen(true);
   const closePaymentModal = () => setIsPaymentModalOpen(false);
 
-  const handleSelectMembership = (plan: MembershipPlan) => {
+  const handleSelectMembership = (plan: MembershipPlan & { plan: string }) => {
     setSelectedMembership(plan);
     closeMembershipModal();
     setTimeout(openPaymentModal, 300); // slight delay for smooth UX
@@ -75,7 +76,7 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={closePaymentModal}
-        membership={selectedMembership}
+        membership={selectedMembership!}
         userInfo={user!}
         // onUserInfoChange={handleUserInfoChange}
       />
