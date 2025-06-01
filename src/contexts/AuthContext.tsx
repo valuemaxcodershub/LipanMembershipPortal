@@ -1,46 +1,65 @@
-import React, { useEffect, useReducer, useRef } from "react";
+// src/context/AuthContext.tsx
+import { useReducer, useEffect } from "react";
 import Cookies from "js-cookie";
-import { AuthContext, AuthContextType, LoginData } from "./createContexts/auth";
 import { isTokenExpired } from "../utils/app/time";
-import { Button, Modal } from "flowbite-react";
-import {
-  FaExclamationTriangle,
-  FaSignOutAlt,
-  FaTimesCircle,
-} from "react-icons/fa";
+import { Modal, Button } from "flowbite-react";
+import { FaExclamationTriangle, FaSignOutAlt, FaTimesCircle } from "react-icons/fa";
+import axios from "../config/axios";
+import { AuthContext, LoginData, Tokens, UserType } from "./createContexts/auth";
+
 
 type AuthState = {
-  user: AuthContextType["user"];
+  user: UserType | null;
   isAuthenticated: boolean;
   showLogoutModal: boolean;
+  isLoading: boolean;
 };
 
 type AuthAction =
-  | { type: "LOGIN"; payload: any }
+  | { type: "LOGIN"; payload: {user: UserType} }
   | { type: "LOGOUT" }
-  | { type: "LOAD_USER"; payload: any }
+  | { type: "LOAD_USER"; payload: UserType }
+  | { type: "SET_isLOADING"; payload: boolean }
   | { type: "SHOW_LOGOUT_MODAL" }
   | { type: "HIDE_LOGOUT_MODAL" };
 
+
+
+// Initial State
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   showLogoutModal: false,
+  isLoading: true,
 };
 
-function authReducer(state: AuthState, action: AuthAction): AuthState {
+// Reducer
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case "LOGIN":
-      return { ...state, user: action.payload, isAuthenticated: true };
+      return {
+        ...state,
+        user: action.payload.user,
+        isAuthenticated: true,
+        isLoading: false,
+      };
     case "LOGOUT":
       return {
         ...state,
         user: null,
         isAuthenticated: false,
         showLogoutModal: false,
+        isLoading: false,
       };
     case "LOAD_USER":
-      return { ...state, user: action.payload, isAuthenticated: true };
+      return {
+        ...state,
+        user: action.payload,
+        isAuthenticated: true,
+        isLoading: false,
+      };
+    case "SET_isLOADING":
+      return { ...state, isLoading: action.payload };
     case "SHOW_LOGOUT_MODAL":
       return { ...state, showLogoutModal: true };
     case "HIDE_LOGOUT_MODAL":
@@ -48,46 +67,78 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     default:
       return state;
   }
-}
+};
 
-function AuthContextProvider({ children }: { children: React.ReactNode }) {
+// Context
+
+const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  const removeUser = () => {
-    Cookies.remove("user");
-    Cookies.remove("token");
+  // Helper functions
+  const setAuthCookies = (user: UserType, tokens: Tokens) => {
+    Cookies.set("user", JSON.stringify(user), { secure: true, sameSite: "Lax" });
+    Cookies.set("access_token", tokens.access, { secure: true, sameSite: "Lax" });
+    Cookies.set("refresh_token", tokens.refresh, { 
+      secure: true, 
+      sameSite: "Lax",
+      httpOnly: false // Note: True HTTPOnly requires backend to set cookie
+    });
   };
 
+  const clearAuthCookies = () => {
+    Cookies.remove("user");
+    Cookies.remove("access_token");
+    Cookies.remove("refresh_token");
+  };
+
+  // Initialize auth state
   useEffect(() => {
-    const user = JSON.parse(Cookies.get("user") || "null");
-    const token = JSON.parse(Cookies.get("token") || "null");
-    if (user && !isTokenExpired(token?.access)) {
-      dispatch({ type: "LOAD_USER", payload: user });
-    } else {
-      removeUser();
-    }
+    const initializeAuth = async () => {
+      const refreshToken = Cookies.get("refresh_token");
+
+      if (refreshToken) {
+        try {
+          // Attempt to refresh token
+          const response = await axios.post("/auth/token/refresh/", {
+            refresh: refreshToken,
+          });
+          console.log("Token refreshed successfully:", response);
+          const {user: userData, access} = response.data;
+          setAuthCookies(userData, {access, refresh: refreshToken});
+          dispatch({ type: "LOAD_USER", payload: userData });
+        } catch (error) {
+          clearAuthCookies();
+        }
+      } else {
+        clearAuthCookies();
+      }
+      dispatch({ type: "SET_isLOADING", payload: false });
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = ({ user, ...tokens }: LoginData) => {
-    Cookies.set("user", JSON.stringify(user));
-    Cookies.set("token", JSON.stringify(tokens));
-    dispatch({ type: "LOGIN", payload: user });
+  // Auth methods
+  const login = ({user, ...tokens}: LoginData) => {
+    setAuthCookies(user, tokens);
+    dispatch({ type: "LOGIN", payload: { user } });
   };
 
   const logout = () => {
-    removeUser();
+    clearAuthCookies();
     dispatch({ type: "LOGOUT" });
   };
 
-  const openLogoutModal = () => dispatch({ type: "SHOW_LOGOUT_MODAL" });
-  const closeLogoutModal = () => dispatch({ type: "HIDE_LOGOUT_MODAL" });
+  const showLogoutModal = () => dispatch({ type: "SHOW_LOGOUT_MODAL" });
+  const hideLogoutModal = () => dispatch({ type: "HIDE_LOGOUT_MODAL" });
 
+  // Logout Modal Component
   const LogoutModal = () => (
     <Modal
+      show={state.showLogoutModal}
+      onClose={hideLogoutModal}
       position="center"
       size="md"
-      show={state.showLogoutModal}
-      onClose={closeLogoutModal}
     >
       <Modal.Body className="text-center">
         <div className="flex justify-center items-center size-24 mx-auto mb-4 rounded-full bg-[#ff0000]/20">
@@ -97,8 +148,13 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
           Are you sure you want to log out?
         </p>
         <div className="flex justify-center gap-4 mt-6">
-          <Button size="md" color="gray" className="!text-gray-800 dark:!text-white" onClick={closeLogoutModal}>
-            <FaTimesCircle className="h-6  mr-3 text-lg" />
+          <Button 
+            size="md" 
+            color="gray" 
+            className="!text-gray-800 dark:!text-white"
+            onClick={hideLogoutModal}
+          >
+            <FaTimesCircle className="h-6 mr-3 text-lg" />
             Cancel
           </Button>
           <Button
@@ -119,14 +175,14 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
       value={{
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        isLoading: state.isLoading,
         login,
-        logout: openLogoutModal, // triggers modal instead of logout directly
+        logout: showLogoutModal, // Shows modal instead of direct logout
       }}
     >
       {children}
       <LogoutModal />
     </AuthContext.Provider>
   );
-}
-
+};
 export default AuthContextProvider;

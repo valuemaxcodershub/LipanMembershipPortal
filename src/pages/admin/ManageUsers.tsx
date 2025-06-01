@@ -12,6 +12,8 @@ import {
   Textarea,
   Avatar,
   Tooltip,
+  Tabs,
+  TabItem,
 } from "flowbite-react";
 import { HiSearch } from "react-icons/hi";
 import {
@@ -34,25 +36,8 @@ import PasswordInput from "../../components/UI/PasswordInput";
 import { toast } from "react-toastify";
 import SelectableSection from "../../components/UI/SelectionCard";
 import { getInitails } from "../../utils/app/text";
-import { BsCheckAll } from "react-icons/bs";
+import { BsCheckAll, BsDatabase } from "react-icons/bs";
 import { errorHandler } from "../../utils/api/errors";
-// Mock Users
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    membership: "Gold",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    membership: "Silver",
-    status: "Suspended",
-  },
-];
 
 type User = {
   id: number;
@@ -81,6 +66,13 @@ const addUserSchema = yup.object().shape({
   is_staff: yup.boolean().required("User type is required"),
 });
 
+const userTabMap = {
+  "0": "users",
+  "1": "admins",
+};
+
+type UserMapType = keyof typeof userTabMap;
+
 const UserManagementPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -88,9 +80,11 @@ const UserManagementPage = () => {
   const search = searchParams.get("search") || "";
   const membership_type = searchParams.get("membership_type") || "";
   const is_active = searchParams.get("is_active") || "";
+  const user_type = searchParams.get("user_type") || "users";
 
   const [users, setUsers] = useState<User[]>([]);
-  const [filtered, setFiltered] = useState<User[]>([]);
+  // const [activeTab, setActiveTab] = useState<UserMapType>("0");
+
   const [membership, setMembership] = useState([]);
   const [membershipMap, setMembershipMap] = useState<any>(null);
   const [membershipFilter, setMembershipFilter] = useState("");
@@ -125,19 +119,26 @@ const UserManagementPage = () => {
     try {
       setLoading(true);
       setError("");
-      const { data: membershipData } = await axios.get(`/membership/`);
-      const { data } = await axios.get("/accounts/users/", {
-        params: { page, search, membership_type, is_active },
-      });
+      setTotalPages(0);
+      setUsers([]);
+      const [membershipResponse, usersResponse] = await Promise.all([
+        axios.get(`/membership/`),
+        axios.get("/accounts/users/", {
+          params: { page, search, membership_type, is_active, type: user_type },
+        }),
+      ]);
+
+      const membershipData = membershipResponse.data;
+      const userData = usersResponse.data;
       const map = membershipData.results.reduce((acc: any, obj: any) => {
         acc[`${obj.id}`] = obj.name;
         return acc;
       }, {});
-      console.log(data, membershipData);
+      console.log(userData, membershipData);
       setMembershipMap(map);
       setMembership(membershipData.results);
-      setTotalPages(data.total_pages);
-      setUsers(data.results);
+      setTotalPages(userData.total_pages);
+      setUsers(userData.results);
     } catch (err) {
       setError("Failed to load users. Please try again.");
     } finally {
@@ -161,20 +162,23 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, search, membership_type, is_active]);
+  }, [page, search, membership_type, is_active, user_type]);
 
   const onSubmit = async (data: any) => {
     console.log(data);
     try {
-      await axios.post("/accounts/users/", data);
+      const response = await axios.post("/accounts/users/", data,{ params: { type: user_type }},);
       reset();
       setOpenAddModal(false);
       toast.success(
-        `${data.is_staff ? "Admin" : "User"} "${data.email}" added successfully!`
+        response.data.detail ||
+          `${data.is_staff ? "Admin" : "User"} "${data.email}" added successfully!`
       );
       fetchUsers(); // Refresh the user list after adding a new user
-    } catch (err) {
-      toast.error("Failed to add user. Please try again.");
+    } catch (err: any) {
+      const errMsg = errorHandler(err);
+      console.error(err.response);
+      toast.error(errMsg || "Failed to add user. Please try again.");
     }
   };
 
@@ -182,7 +186,7 @@ const UserManagementPage = () => {
     if (confirmAction) {
       const { user } = confirmAction;
       setActionLoading(true);
-      const url = `/accounts/users/${user.id}/`;
+      const url = `/accounts/users/${user.id}/?type=${user_type}`;
       try {
         if (confirmAction.type === "delete") {
           await axios.delete(url);
@@ -204,7 +208,7 @@ const UserManagementPage = () => {
     }
   };
 
-  const updateParams = (fields: Record<string, string>) => {
+  const updateParams = (fields: Record<string, string> = {}) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(fields).forEach(([key, value]) => {
       if (value) {
@@ -219,6 +223,9 @@ const UserManagementPage = () => {
   const onPageChange = (page: number) =>
     updateParams({ page: page.toString() });
 
+  const onUserTypeChange = (key: UserMapType) =>
+    updateParams({ user_type: userTabMap[key], page: "1" });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row justify-between items-center">
@@ -227,11 +234,21 @@ const UserManagementPage = () => {
         </h1>
         <div className="flex items-center gap-3">
           <Tooltip content="Refresh" placement="right">
-            <Button color="gray" pill className="!w-fit" onClick={fetchUsers}>
+            <Button
+              disabled={loading}
+              color="gray"
+              pill
+              className="!w-fit"
+              onClick={fetchUsers}
+            >
               <FaRedo className="text-blue-600" />
             </Button>
           </Tooltip>
-          <Button color="blue" onClick={() => setOpenAddModal(true)}>
+          <Button
+            disabled={loading}
+            color="blue"
+            onClick={() => setOpenAddModal(true)}
+          >
             <FaPlus className="mr-2 h-6" /> Add New User
           </Button>
         </div>
@@ -240,6 +257,7 @@ const UserManagementPage = () => {
       {/* Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-5">
         <TextInput
+          disabled={loading}
           icon={HiSearch}
           placeholder="Search by name or email"
           value={searchValue}
@@ -247,19 +265,23 @@ const UserManagementPage = () => {
           className="w-full md:w-3/5"
         />
         <div className="flex gap-4 w-full md:w-2/5">
+          {user_type === "users" && (
+            <Select
+              disabled={loading}
+              onChange={(e) => setMembershipFilter(e.target.value)}
+              value={membershipFilter}
+              className="w-full"
+            >
+              <option value="">All Memberships</option>
+              {membership.map((opt: any) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.name}
+                </option>
+              ))}
+            </Select>
+          )}
           <Select
-            onChange={(e) => setMembershipFilter(e.target.value)}
-            value={membershipFilter}
-            className="w-full"
-          >
-            <option value="">All Memberships</option>
-            {membership.map((opt: any) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name}
-              </option>
-            ))}
-          </Select>
-          <Select
+            disabled={loading}
             onChange={(e) => setStatusFilter(e.target.value)}
             value={statusFilter}
             className="w-full"
@@ -271,6 +293,29 @@ const UserManagementPage = () => {
         </div>
       </div>
 
+      <div className="overflow-x-auto max-w-md m-auto">
+        <Tabs
+          aria-label="Full width tabs"
+          style="fullWidth"
+          onActiveTabChange={(tab) =>
+            onUserTypeChange(String(tab) as UserMapType)
+          }
+        >
+          <TabItem
+            active={user_type === "users"}
+            disabled={loading}
+            title="Members"
+            icon={FaUser}
+          />
+          <TabItem
+            active={user_type === "admins"}
+            disabled={loading}
+            title="Administrators"
+            icon={FaUserShield}
+          />
+        </Tabs>
+      </div>
+
       {/* Table */}
       <div className="overflow-x-auto rounded-lg shadow-sm">
         <Table hoverable className="min-w-full text-sm">
@@ -279,7 +324,9 @@ const UserManagementPage = () => {
             <Table.HeadCell>Name</Table.HeadCell>
             <Table.HeadCell>Email</Table.HeadCell>
             <Table.HeadCell>Type</Table.HeadCell>
-            <Table.HeadCell>Membership</Table.HeadCell>
+            {user_type === "users" && (
+              <Table.HeadCell>Membership</Table.HeadCell>
+            )}
             <Table.HeadCell>Status</Table.HeadCell>
             <Table.HeadCell>Actions</Table.HeadCell>
           </Table.Head>
@@ -311,7 +358,7 @@ const UserManagementPage = () => {
                   colSpan={7}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 text-gray-500 py-6"
                 >
-                  No users found.
+                  No {user_type} found.
                 </Table.Cell>
               </Table.Row>
             ) : (
@@ -362,11 +409,13 @@ const UserManagementPage = () => {
                       </div>
                     </Badge>
                   </Table.Cell>
-                  <Table.Cell>
-                    <Badge className="w-fit mx-auto" color="purple">
-                      {membershipMap[`${user.membership_type}`] || "N/A"}
-                    </Badge>
-                  </Table.Cell>
+                  {user_type === "users" && (
+                    <Table.Cell>
+                      <Badge className="w-fit mx-auto" color="purple">
+                        {membershipMap[`${user.membership_type}`] || "N/A"}
+                      </Badge>
+                    </Table.Cell>
+                  )}
                   <Table.Cell>
                     <Badge
                       className="w-fit mx-auto"
@@ -383,7 +432,7 @@ const UserManagementPage = () => {
                         className="!w-fit"
                         // onClick={() => openUserModal(user)}
                         as={Link}
-                        to={`/admin/manage-users/${user.id}/view`}
+                        to={`/admin/manage-users/${user.id}/${user.is_staff ? "admins" : "users"}/view`}
                       >
                         <FaEye className="h-5" />
                       </Button>
@@ -494,8 +543,7 @@ const UserManagementPage = () => {
               >
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
-                <option value="female">Ms</option>
-                <option value="other">Others</option>
+                <option value="female">Female</option>
               </Select>
             </div>
             <div>
@@ -594,11 +642,25 @@ const UserManagementPage = () => {
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirmAction}
         title={
-          confirmAction?.type === "delete" ? "Delete User?" : "Suspend User?"
+          confirmAction?.type === "delete"
+            ? "Delete User?"
+            : confirmAction?.user.is_active
+              ? "Suspend User"
+              : "Unsuspend User"
         }
         message={`Are you sure you want to ${
-          confirmAction?.type === "delete" ? "delete" : "suspend"
+          confirmAction?.type === "delete"
+            ? "delete"
+            : confirmAction?.user.is_active
+              ? "suspend"
+              : "unsuspend"
         } ${confirmAction?.user.full_name}?`}
+        theme={
+          confirmAction?.type === "statusChange" &&
+          !confirmAction?.user.is_active
+            ? "success"
+            : "failure"
+        }
         // destructive
       />
     </div>

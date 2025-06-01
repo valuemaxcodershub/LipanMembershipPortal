@@ -70,7 +70,7 @@ const newJournalschema = yup.object({
   title: yup.string().required("Title is required"),
   description: yup.string().required("Description is required"),
   owner_name: yup.string().default("Admin"),
-  tags: yup
+  tag_ids: yup
     .array()
     .of(yup.number().required("tag is required"))
     .min(1, "At least one tag is required"),
@@ -165,10 +165,9 @@ export default function ManageJournalsPage() {
       let response;
       const { id } = confirmAction?.journal;
       if (["approve", "reject"].includes(confirmAction?.type as string)) {
-        response = await axios.patch(
-          `/journals/${id}/status`,
+        response = await axios.post(
+          `/admin/resources/${id}/${confirmAction?.type}/`,
           { rejection_reason: rejectionReason },
-          { params: { action: confirmAction?.type } }
         );
       } else if (confirmAction?.type === "delete") {
         response = await axios.delete(`/admin/resources/${id}/`);
@@ -194,13 +193,13 @@ export default function ManageJournalsPage() {
   };
 
   const handleUpload = async (data: any) => {
-    const { file, tags, ...otherData } = data;
+    const { file, tag_ids, ...otherData } = data;
     const formData = new FormData();
     if (file) {
       formData.append("file", data.file[0]);
     }
-    tags.forEach((tag: any) => {
-      formData.append("tags", tag);
+    tag_ids.forEach((tag: any) => {
+      formData.append("tag_ids", tag);
     });
     Object.entries(otherData).forEach(([key, value]) => {
       formData.append(key, value as string);
@@ -339,7 +338,19 @@ export default function ManageJournalsPage() {
               journals.map((journal) => (
                 <Table.Row key={journal.id}>
                   <Table.Cell>{journal.owner.full_name}</Table.Cell>
-                  <Table.Cell>{journal.title}</Table.Cell>
+                  <Table.Cell>
+                  <Tooltip
+                          content={
+                            <p className=" max-w-[300px]">
+                              {journal.title}
+                            </p>
+                          }
+                        >
+                          <p className="cursor-pointer truncate hover:underline max-w-[170px]">
+                            {journal.title}
+                          </p>
+                        </Tooltip>
+                  </Table.Cell>
                   <Table.Cell>{formatDate(journal.created_at)}</Table.Cell>
                   <Table.Cell>
                     <Badge
@@ -361,7 +372,7 @@ export default function ManageJournalsPage() {
                             </p>
                           }
                         >
-                          <p className="truncate hover:underline max-w-[170px]">
+                          <p className="cursor-pointer truncate hover:underline max-w-[170px]">
                             {journal.rejection_reason}
                           </p>
                         </Tooltip>
@@ -490,11 +501,11 @@ export default function ManageJournalsPage() {
                   const selectedValues = selected.map((item: any) =>
                     Number(item.value)
                   );
-                  setValue("tags", selectedValues);
+                  setValue("tag_ids", selectedValues);
                 }}
               />
-              {errors.tags && (
-                <p className="text-sm text-red-500">{errors.tags.message}</p>
+              {errors.tag_ids && (
+                <p className="text-sm text-red-500">{errors.tag_ids.message}</p>
               )}
             </div>
             <FileDropzone label="Select Upload" onFilesSelected={handleFiles} />

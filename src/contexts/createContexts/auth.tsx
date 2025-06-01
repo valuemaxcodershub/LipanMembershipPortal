@@ -9,13 +9,18 @@ export interface UserType {
   payment_status: "unpaid" | "paid" | "pending"
 }
 
+export type Tokens = {
+  access: string;
+  refresh: string;
+};
+
 export type LoginData = {
   user: UserType;
-  tokens: { access: string; refresh: string };
-};
+} & Tokens
 export interface AuthContextType {
   user: UserType | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (data: LoginData) => void;
   logout: () => void;
 }

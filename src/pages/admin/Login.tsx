@@ -82,6 +82,7 @@ const AdminLoginPage = () => {
     // TODO: handle actual login (call API, redirect, etc.)
     try {
       const { data } = await Login(formdata, "admin");
+      console.log(data)
       login(data);
       reset();
       navigate("/admin/dashboard");

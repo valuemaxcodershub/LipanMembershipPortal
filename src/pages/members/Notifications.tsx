@@ -1,67 +1,91 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, Dropdown, Label, Modal, TextInput, ToggleSwitch } from "flowbite-react";
 import { HiBell, HiCheck, HiClock, HiDocumentDownload, HiSearch } from "react-icons/hi";
 import { FaFileCsv, FaFilePdf } from "react-icons/fa";
+import axios from "../../config/axios";
+import Switch from "../../components/UI/Switch";
+import { formatDate } from "../../utils/app/time";
+import { Skeleton } from "../../components/UI/Skeleton";
 
 type Notification = {
   id: number;
-  type: "Info" | "Warning" | "Success";
-  title: string;
+  // type: "Info" | "Warning" | "Success";
+  subject: string;
   message: string;
-  timestamp: string;
-  read: boolean;
+  created_at: string;
+  is_read: boolean;
 };
 
-const mockNotifications: Notification[] = [
-  {
-    id: 1,
-    type: "Info",
-    title: "Event Reminder",
-    message: "You have a leadership seminar on April 10th at 10:00 AM.",
-    timestamp: "2025-04-01T09:30:00Z",
-    read: false,
-  },
-  {
-    id: 2,
-    type: "Success",
-    title: "Invoice Paid",
-    message: "Invoice #INV-02342 has been successfully paid.",
-    timestamp: "2025-03-28T14:45:00Z",
-    read: true,
-  },
-  {
-    id: 3,
-    type: "Warning",
-    title: "Membership Expiring Soon",
-    message: "Your annual membership will expire in 5 days.",
-    timestamp: "2025-03-27T11:15:00Z",
-    read: false,
-  },
-];
+
 
 const NotificationsPage = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [search, setSearch] = useState("");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    try {
+     const { data } = await axios.get("/accounts/user/notifications/");
+     console.log(data);
+     setNotifications(data.results);
+     setIsLoading(false);
+   } catch (error) {
+      console.error("Error fetching notifications:", error);
+   }
+  }
 
   const handleSearch = () => {
     return notifications.filter((notif) =>
-      notif.title.toLowerCase().includes(search.toLowerCase()) ||
-      notif.message.toLowerCase().includes(search.toLowerCase())
+      notif.subject?.toLowerCase().includes(search.toLowerCase()) ||
+      notif.message?.toLowerCase().includes(search.toLowerCase())
     );
   };
 
-  const handleMarkAsRead = (id: number) => {
+  const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
+    try {
+     await axios.get(`/accounts/user/notifications/${id}/`);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
+  
+  const viewNotification = async (notification: Notification) => {
+    setSelectedNotification(notification);
+    handleMarkAsRead(notification.id);
+  }
 
-  const filteredNotifications = handleSearch().filter((n) =>
-    showUnreadOnly ? !n.read : true
+  const filteredNotifications = !notifications.length ? [] : handleSearch().filter((n) =>
+    showUnreadOnly ? !n.is_read : true
   );
 
+  useEffect(() => {
+    fetchNotifications();
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <Skeleton className="h-10 w-60 mb-2" />
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -75,15 +99,11 @@ const NotificationsPage = () => {
             onChange={(e) => setSearch(e.target.value)}
             icon={HiSearch}
           />
-          <ToggleSwitch
+          <Switch
             checked={showUnreadOnly}
             onChange={setShowUnreadOnly}
             label="Unread only"
           />
-          <Dropdown label="Export" color="gray" inline>
-            <Dropdown.Item icon={FaFileCsv}>Download CSV</Dropdown.Item>
-            <Dropdown.Item icon={FaFilePdf}>Download PDF</Dropdown.Item>
-          </Dropdown>
         </div>
       </div>
 
@@ -93,23 +113,23 @@ const NotificationsPage = () => {
             <Card
               key={notif.id}
               className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-2 ${
-                notif.read ? "opacity-70" : "border-l-4 border-blue-600"
+                notif.is_read ? "opacity-70" : "!border-l-4 !border-l-blue-600"
               }`}
             >
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  {notif.title}
+                  {notif.subject}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-full">
                   {notif.message}
                 </p>
                 <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                   <HiClock className="inline-block" />{" "}
-                  {new Date(notif.timestamp).toLocaleString()}
+                  {formatDate(notif.created_at) || "Unknown date"}
                 </p>
               </div>
               <div className="flex gap-2 mt-2 md:mt-0">
-                {!notif.read && (
+                {!notif.is_read && (
                   <Button
                     color="success"
                     size="xs"
@@ -121,7 +141,7 @@ const NotificationsPage = () => {
                 <Button
                   size="xs"
                   color="blue"
-                  onClick={() => setSelectedNotification(notif)}
+                  onClick={() => viewNotification(notif)}
                 >
                   View
                 </Button>
@@ -141,7 +161,7 @@ const NotificationsPage = () => {
         onClose={() => setSelectedNotification(null)}
         size="lg"
       >
-        <Modal.Header>{selectedNotification?.title}</Modal.Header>
+        <Modal.Header>{selectedNotification?.subject}</Modal.Header>
         <Modal.Body>
           <div>
             <p className="text-gray-700 dark:text-gray-300 mb-2">
@@ -149,7 +169,8 @@ const NotificationsPage = () => {
             </p>
             <p className="text-sm text-gray-400 flex items-center gap-1">
               <HiClock />{" "}
-              {new Date(selectedNotification?.timestamp || "").toLocaleString()}
+              {formatDate(selectedNotification?.created_at as string) ||
+                "Unknown date"}
             </p>
           </div>
         </Modal.Body>

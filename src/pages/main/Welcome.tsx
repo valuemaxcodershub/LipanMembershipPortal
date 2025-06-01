@@ -3,8 +3,11 @@ import { FiArrowRight, FiLogIn, FiUsers } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { Logo } from "../../components/UI/Logo";
 import { PageMeta } from "../../utils/app/pageMetaValues";
+import { useAuth } from "../../hooks/auth";
+import ProfileToggle from "../../components/UI/ProfileToggle";
 
 function WelcomePage() {
+  const { isAuthenticated } = useAuth();
   return (
     <>
       <PageMeta>
@@ -25,12 +28,30 @@ function WelcomePage() {
             <DarkThemeToggle />
           </div>
           <Navbar.Collapse className="ms-auto">
-            <Button as={Link} to="/auth/sign-in" size="sm" color="blue" outline>
-              Login
-            </Button>
-            <Button as={Link} to="/auth/sign-up" size="sm" color="blue" outline>
-              Get Started
-            </Button>
+            {!isAuthenticated ? (
+              <>
+                <Button
+                  as={Link}
+                  to="/auth/sign-in"
+                  size="sm"
+                  color="blue"
+                  outline
+                >
+                  Login
+                </Button>
+                <Button
+                  as={Link}
+                  to="/auth/sign-up"
+                  size="sm"
+                  color="blue"
+                  outline
+                >
+                  Get Started
+                </Button>
+              </>
+            ) : (
+              <ProfileToggle />
+            )}
           </Navbar.Collapse>
         </Navbar>
 

@@ -1,12 +1,11 @@
-import { FiLogOut, FiMenu } from "react-icons/fi";
 import { Logo } from "../UI/Logo";
-import { Avatar, DarkThemeToggle, Dropdown } from "flowbite-react";
+import { DarkThemeToggle } from "flowbite-react";
 import { BiMenu } from "react-icons/bi";
-import { useAuth } from "../../hooks/auth";
-import { getInitails } from "../../utils/app/text";
+// import { useAuth } from "../../hooks/auth";
+import ProfileToggle from "../UI/ProfileToggle";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
-  const { user, logout } = useAuth()
+  // const { user, logout } = useAuth()
  
   return (
     <>
@@ -22,39 +21,8 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
           <h2 className="sr-only">Dashboard</h2>
         </div>
         <div className="flex items-center space-x-4">
-          <Dropdown
-            label={
-              <Avatar
-                img={user?.profile_pic ||undefined}
-                placeholderInitials={getInitails(user?.full_name || "")}
-                color={"purple"}
-                rounded
-              />
-            }
-            arrowIcon={false}
-            inline
-            className="!min-w-[200px]"
-          >
-            <Dropdown.Header>
-              <span className="block text-sm">{user?.full_name}</span>
-              <span className="block truncate text-sm font-medium">
-                {user?.email}
-              </span>
-            </Dropdown.Header>
-            <Dropdown.Item>Dashboard</Dropdown.Item>
-            <Dropdown.Item>Settings</Dropdown.Item>
-            <Dropdown.Item>Earnings</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Item>
-              <button
-                onClick={logout}
-                className="w-full flex items-center px-4 py-2 text-white bg-[#ff0000] rounded-md"
-              >
-                <FiLogOut className="mr-3" size={20} /> Logout
-              </button>
-            </Dropdown.Item>
-          </Dropdown>
-          <DarkThemeToggle/>
+         <ProfileToggle/>
+          <DarkThemeToggle />
         </div>
       </header>
     </>

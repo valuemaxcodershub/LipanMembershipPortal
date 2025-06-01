@@ -24,10 +24,20 @@ import axios from "../../config/axios";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { errorHandler } from "../../utils/api/errors";
+import { contactAttachmentformats } from "../../schemas/mainauth";
 
 const schema = yup.object().shape({
-  subject: yup.string().required("Subject is required"),
   reply: yup.string().required("Message is required"),
+  attachment: yup
+      .mixed<FileList>()
+      .test("fileSize", "The file is too large: Maximun of 5MB", (value) => {
+        return (value?.[0]?.size ?? 0) <= 10_000_000 || !value?.length;
+      })
+      .test("type", "Only image (JPEG, PNG), pdf, zip or docx allowed", (value) => {
+        return (
+          !value?.length || contactAttachmentformats.includes(value?.[0]?.type)
+        );
+      }),
 });
 
 export default function AdminContactMessagesPage() {
@@ -41,6 +51,7 @@ export default function AdminContactMessagesPage() {
   const [tableLayout, setTableLayout] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewFiles, setPreviewFiles] = useState<any[]>([]);
 
   const itemsPerPage = Number(searchParams.get("itemsPerPage")) || 10;
   const page = Number(searchParams.get("page")) || 1;
@@ -49,6 +60,9 @@ export default function AdminContactMessagesPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    trigger,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema),
@@ -92,10 +106,7 @@ export default function AdminContactMessagesPage() {
 
   const openReplyModal = (msg: any) => {
     setSelectedMessage(msg);
-    reset({
-      subject: `Reply to: ${msg.subject}`,
-      reply: ""
-    });
+    reset();
     setReplyModal(true);
   };
 
@@ -109,10 +120,19 @@ export default function AdminContactMessagesPage() {
     const toastId = toast.loading("Sending reply...", {
       position: "top-center"
     });
+    const formData = new FormData();
+    Object.entries(formdata).forEach(([key, value]) => {
+      if (key === "attachment" && value) {
+        console.log(value);
+        formData.append(key, (value as FileList)?.[0]);
+      } else {
+        formData.append(key, value as string);
+      }
+    });
     try {
       const { data } = await axios.post(
         `/contact-admin/${selectedMessage.id}/reply/`,
-        formdata
+        formData
       );
       console.log("Reply Response:", data);
       toast.update(toastId, {
@@ -395,14 +415,10 @@ export default function AdminContactMessagesPage() {
 
       <Modal show={replyModal} onClose={() => setReplyModal(false)}>
         <Modal.Header>
-          Replying to: {selectedMessage?.email} message
+          Replying to: "{selectedMessage?.email}"
         </Modal.Header>
         <Modal.Body>
           <form className="space-y-4" onSubmit={handleSubmit(onReplySubmit)}>
-            <div>
-              <Label htmlFor="subject">Subject</Label>
-              <TextInput id="subject" {...register("subject")} readOnly />
-            </div>
             <div>
               <Label htmlFor="reply">Reply</Label>
               <Textarea
@@ -411,21 +427,87 @@ export default function AdminContactMessagesPage() {
                 placeholder="Write your response here..."
                 {...register("reply")}
                 color={errors.reply ? "failure" : undefined}
-                helperText={errors.reply?.message} 
+                helperText={errors.reply?.message}
                 disabled={isSubmitting}
               />
+            </div>
+            <div>
+              <FileDropzone
+                label="Attach a File"
+                subtext={
+                  //     errors.attachment?.message ||
+                  "Max size: 10MB, formats: jpg, png, pdf, zip, docx"
+                }
+                //   className={errors.attachment ? "!border-red-500 !bg-red-400" : ""}
+                onFilesSelected={(files) => {
+                  (async () => {
+                    clearErrors(["attachment"]);
+                    setValue("attachment", files as FileList);
+                    const isValid = await trigger(["attachment"]);
+                    const items = Array.from(files as File[]).map((file) => ({
+                      name: file.name,
+                      size: file.size,
+                      ok: isValid,
+                    }));
+                    console.log(files);
+                    setPreviewFiles((prev) => [
+                      //    ...prev,
+                      ...items,
+                    ]);
+                    if (!isValid) {
+                      setValue("attachment", undefined);
+                    }
+                  })();
+                }}
+                accept={contactAttachmentformats.join(", ")}
+              />
+              {errors.attachment && (
+                <p className="text-sm text-red-500 my-2">
+                  {errors.attachment?.message}
+                </p>
+              )}
+              {previewFiles && (
+                <ul className="space-y-5">
+                  {Array.from(previewFiles).map((file, index) => (
+                    <li
+                      key={index}
+                      className={`flex items-center relative justify-between border-2 ${file.ok ? "bg-emerald-500/60 border-emerald-600" : "bg-[#ff0000]/40 border-[#ff0000]"} p-2 rounded-md mt-2`}
+                    >
+                      <span className="text-sm text-gray-800 dark:text-white">
+                        {file.name}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-300">
+                        {file.size < 1_000_000
+                          ? `${Math.floor(file.size / 1_000)} KB`
+                          : `${(file.size / 1_000_000).toFixed(2)} MB`}
+                      </span>
+                      <button
+                        type="button"
+                        className="absolute -right-1.5 -top-4 text-lg text-gray-900 dark:hover:text-white"
+                        onClick={() => {
+                          setValue("attachment", undefined);
+                          setPreviewFiles((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                      >
+                        &times;
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="flex justify-end gap-3 mt-4">
               <Button
                 color="gray"
                 type="button"
-                onClick={() => setReplyModal(false)} 
+                onClick={() => setReplyModal(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button color="blue" type="submit" 
-              disabled={isSubmitting}>
+              <Button color="blue" type="submit" disabled={isSubmitting}>
                 Send Reply
               </Button>
             </div>

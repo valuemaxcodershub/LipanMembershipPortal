@@ -25,18 +25,19 @@ const profileSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
   gender: yup.string().required("Gender is required"),
   phone: yup.string().required("Phone is required"),
-  organization: yup.string().required("Organization is required"),
-  mailing_address: yup.string(),
-  city: yup.string(),
-  state: yup.string(),
-  zip_code: yup.string(),
-  bio: yup.string(),
-  payment_status: yup.string(),
-  membership_type: yup.string(),
+  organization: yup.string().nullable(),
+  mailing_address: yup.string().nullable(),
+  city: yup.string().nullable(),
+  state: yup.string().nullable(),
+  zip_code: yup.string().nullable(),
+  payment_status: yup.string().nullable(),
+  payment_method: yup.string().nullable(),
+  plan_type: yup.string().nullable(),
+  membership_type: yup.string().nullable(),
 });
 
 export default function ViewUserPage() {
-  const { userId } = useParams<{ userId: string }>();
+  const { id, type } = useParams<{ id: string; type: string }>();
   const [user, setUser] = useState<any>(null);
   const [membershipMap, setMembershipMap] = useState<any>(null);
   const [memberships, setMemberships] = useState<any[]>([]);
@@ -56,10 +57,12 @@ export default function ViewUserPage() {
   const fetchUserData = async () => {
     setIsFetching(true);
     try {
-      const { data: membershipData } = await axios.get(`/membership/`);
-      const {
-        data: { profile_pic, ...data },
-      } = await axios.get(`/accounts/users/${userId}/`);
+      const [membershipResponse, userResponse] = await Promise.all([
+        axios.get(`/membership/`),
+        axios.get(`/accounts/users/${id}/`, { params: { type } }),
+      ]);
+      const { profile_pic, ...data } = userResponse.data;
+      const membershipData = membershipResponse.data;
       const map = membershipData.results.reduce((acc: any, obj: any) => {
         acc[`${obj.id}`] = obj.name;
         return acc;
@@ -72,7 +75,7 @@ export default function ViewUserPage() {
       setAvatarUrl(
         profile_pic
           ? `${import.meta.env.VITE_API_URL + profile_pic}`
-          : "https://flowbite.com/docs/images/people/profile-picture-5.jpg"
+          : "/avatar_placeholder.png"
       );
       setIsFetching(false);
     } catch (error) {
@@ -91,23 +94,22 @@ export default function ViewUserPage() {
 
   const onSubmit = async (data: any) => {
     console.log("Updated Profile Data:", data);
-    const formData = {
-      ...data,
-      membership_type: parseInt(data.membership_type),
-    }
     // ⏩ You can trigger an update API here
     try {
       const { data: updatedData } = await axios.patch(
-        `/accounts/users/${userId}/`,
-        formData
+        `/accounts/users/${id}/`,
+        data,
+        { params: { type } }
       );
       console.log("Updated User Data:", updatedData);
       setUser(updatedData);
       setIsModalOpen(false);
       toast.success("Profile updated successfully!");
     } catch (error: any) {
-      toast.error(`Failed to update profile: ${error.response.data.detail || error.message} Please try again.`);
-      console.error("Error updating profile:", error);
+      toast.error(
+        `Failed to update profile: ${error.response.data.detail || error.message} Please try again.`
+      );
+      console.error("Error updating profile:", error.response);
     }
   };
 
@@ -182,27 +184,35 @@ export default function ViewUserPage() {
               <ProfileField label="Phone" value={user?.phone} />
               <ProfileField label="Gender" value={user?.gender} />
               <ProfileField label="Title" value={user?.title} />
-              <ProfileField label="Organization" value={user?.organization} />
+              <ProfileField label="Organization / Institution" value={user?.organization} />
               <ProfileField
                 label="Mailing Address"
                 value={user?.mailing_address}
               />
               <ProfileField label="City" value={user?.city} />
               <ProfileField label="State" value={user?.state} />
-              <ProfileField label="ZIP Code" value={user?.zip_code} />
-              <ProfileField
-                label="Membership Type"
-                value={membershipMap[`${user?.membership_type}`]}
-              />
               <div className="col-span-1 md:col-span-2">
-                <ProfileField
-                  label="Payment Status"
-                  value={user?.payment_status}
-                />
+                <ProfileField label="ZIP Code" value={user?.zip_code} />
               </div>
-              {/* <div className="col-span-1 md:col-span-2">
-            <ProfileField label="Bio" value={user?.bio} />
-          </div> */}
+              {!user?.is_staff && (
+                <>
+                  <div className="col-span-1 md:col-span-2">
+                    <ProfileField
+                      label="Membership Type"
+                      value={membershipMap[`${user?.membership_type}`]}
+                    />
+                  </div>
+                  <ProfileField
+                    label="Payment Status"
+                    value={user?.payment_status}
+                  />
+                  <ProfileField label="Plan Type" value={user?.plan_type} />
+                  <ProfileField
+                    label="Payment Method"
+                    value={user?.payment_method || "Not Paid"}
+                  />
+                </>
+              )}
             </div>
 
             {/* 🔵 Edit Profile Button */}
@@ -224,11 +234,8 @@ export default function ViewUserPage() {
       >
         <Modal.Header>Edit User Profile</Modal.Header>
         <Modal.Body>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="grid grid-cols-1 gap-4"
-          >
-            <div className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label value="Full Name" />
                 <TextInput
@@ -276,7 +283,7 @@ export default function ViewUserPage() {
                 />
               </div>
               <div>
-                <Label value="Organization" />
+                <Label value="Organization / Institution" />
                 <TextInput
                   {...register("organization")}
                   color={errors.organization ? "failure" : undefined}
@@ -306,49 +313,76 @@ export default function ViewUserPage() {
                   color={errors.zip_code ? "failure" : undefined}
                   helperText={errors.zip_code?.message}
                 />
-                </div>
-              <div>
-                <Label value="Membership Type" />
-                <Select
-                  {...register("membership_type")}
-                  color={errors.membership_type ? "failure" : undefined}
-                  helperText={errors.membership_type?.message}
-                >
-                  <option value="">Select Membership Type</option>
-                  {memberships.map((opt: any) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </option>
-                  ))}
-                </Select>
               </div>
-              <div>
-                <Label value="Payment Status" />
-                <Select
-                  {...register("payment_status")}
-                  color={errors.payment_status ? "failure" : undefined}
-                  helperText={errors.payment_status?.message}
-                >
-                  <option value="">Select Membership Type</option>
-                  {["Paid", "Unpaid"].map((opt: string) => (
-                    <option key={opt} value={opt.toLowerCase()}>
-                      {opt}
-                    </option>
-                  ))}
-                </Select>
+              <div className="col-span-1 lg:col-span-2">
+                <Label value="Mailing Address" />
+                <Textarea {...register("mailing_address")} rows={3} />
               </div>
+              {!user?.is_staff && (
+                <>
+                  <div>
+                    <Label value="Membership Type" />
+                    <Select
+                      {...register("membership_type")}
+                      color={errors.membership_type ? "failure" : undefined}
+                      helperText={errors.membership_type?.message}
+                    >
+                      <option value="">Select Membership Type</option>
+                      {memberships.map((opt: any) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <Label value="Payment Status" />
+                    <Select
+                      {...register("payment_status")}
+                      color={errors.payment_status ? "failure" : undefined}
+                      helperText={errors.payment_status?.message}
+                    >
+                      <option value="">Select Membership Type</option>
+                      {["Paid", "Unpaid"].map((opt: string) => (
+                        <option key={opt} value={opt.toLowerCase()}>
+                          {opt}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <Label value="Plan Type" />
+                    <Select
+                      {...register("plan_type")}
+                      color={errors.plan_type ? "failure" : undefined}
+                      helperText={errors.plan_type?.message}
+                    >
+                      <option value="">Select Membership Type</option>
+                      {["Monthly", "Yearly"].map((opt: string) => (
+                        <option key={opt} value={opt.toLowerCase()}>
+                          {opt}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <Label value="Payment Method" />
+                    <Select
+                      {...register("payment_method")}
+                      color={errors.payment_method ? "failure" : undefined}
+                      helperText={errors.payment_method?.message}
+                    >
+                      <option value="">Select Membership Type</option>
+                      {["Cash", "Transfer"].map((opt: string) => (
+                        <option key={opt} value={opt.toLowerCase()}>
+                          {opt}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
-
-            <div>
-              <Label value="Mailing Address" />
-              <Textarea {...register("mailing_address")} rows={3} />
-            </div>
-
-            <div>
-              <Label value="Bio" />
-              <Textarea {...register("bio")} rows={4} />
-            </div>
-
             <div className="flex justify-end mt-4">
               <Button
                 type="submit"

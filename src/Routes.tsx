@@ -29,7 +29,7 @@ import ProtectedRoute from "./ProtectRoute";
 import { DarkThemeToggle } from "flowbite-react";
 import RegistrationSuccessPage from "./pages/main/RegistrationSuccess";
 import NotFoundPage from "./pages/main/404";
-import AdminMembershipPlansPage from "./pages/admin/ManageMembership";
+import AdminMembershipsListPage from "./pages/admin/Membership";
 import AdminEventsPage from "./pages/admin/ManageEvents";
 import ManageJournalsPage from "./pages/admin/ManageJournals";
 import NotificationAnnouncementPage from "./pages/admin/Notifications&Announcements";
@@ -37,21 +37,29 @@ import AdminContactMessagesPage from "./pages/admin/UserContact&Reports";
 import PortalSettingsPage from "./pages/admin/PortalSettings";
 import AdminLoginPage from "./pages/admin/Login";
 import ViewUserPage from "./pages/admin/ViewUser";
+import MembershipCreateEditPage from "./pages/admin/ManageMembership";
+import { useAuth } from "./hooks/auth";
+import Cookies from "js-cookie"
 
 function AppRoutes() {
   const { pathname } = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
+  const [showLoader, setShowLoader] = useState(true);
+  const {isLoading} = useAuth();
+
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 4000);
-  }, []);
+    // const hasRefreshToken = !!Cookies.get("refresh_token");
+
+    // Show loader ONLY if refresh_token exists and auth is still loading
+    if (!isLoading) {
+      setShowLoader(false);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
 
-  if (isLoading) {
+  if (showLoader) {
     return (
       <div className="w-full h-screen flex justify-center items-center dark:bg-gray-900">
         <SpinnerLogo />
@@ -113,9 +121,13 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/admin/dashboard" />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="memberships" element={<AdminMembershipPlansPage />} />
+        <Route path="memberships" element={<AdminMembershipsListPage />} />
+        <Route
+          path="memberships/:value"
+          element={<MembershipCreateEditPage />}
+        />
         <Route path="manage-users" element={<UserManagementPage />} />
-        <Route path="manage-users/:userId/view" element={<ViewUserPage />} />
+        <Route path="manage-users/:id/:type/view" element={<ViewUserPage />} />
         <Route path="events" element={<AdminEventsPage />} />
         <Route path="manage-journals" element={<ManageJournalsPage />} />
         <Route

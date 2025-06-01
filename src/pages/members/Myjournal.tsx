@@ -55,7 +55,7 @@ const newJournalschema = yup.object({
   title: yup.string().required("Title is required"),
   description: yup.string().required("Description is required"),
   owner_name: yup.string().default("Admin"),
-  tags: yup
+  tag_ids: yup
     .array()
     .of(yup.number().required("tag is required"))
     .min(1, "At least one tag is required"),
@@ -95,13 +95,13 @@ const MyJournalPage = () => {
   const [interests, setInterests] = useState<any[]>([]);
 
   const handleUpload = async (data: any) => {
-    const { file, tags, ...otherData } = data;
+    const { file, tag_ids, ...otherData } = data;
     const formData = new FormData();
     if (file) {
       formData.append("file", data.file[0]);
     }
-    tags.forEach((tag: any) => {
-      formData.append("tags", tag);
+    tag_ids.forEach((tag: any) => {
+      formData.append("tag_ids", tag);
     });
     Object.entries(otherData).forEach(([key, value]) => {
       formData.append(key, value as string);
@@ -201,27 +201,7 @@ const MyJournalPage = () => {
           </Button>
         </div>
 
-        <div className="mb-4">
-          <h2 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
-            Filter by Tags
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                disabled={isFetching}
-                onClick={() => handleTagFilter(tag)}
-                className={`px-3 py-1 rounded-full border text-sm transition-all ${
-                  selectedTag === tag
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
+       
 
         <div className="min-h-[200px]">
           {isFetching ? (
@@ -345,11 +325,11 @@ const MyJournalPage = () => {
                     const selectedValues = selected.map((item: any) =>
                       Number(item.value)
                     );
-                    setValue("tags", selectedValues);
+                    setValue("tag_ids", selectedValues);
                   }}
                 />
-                {errors.tags && (
-                  <p className="text-sm text-red-500">{errors.tags.message}</p>
+                {errors.tag_ids && (
+                  <p className="text-sm text-red-500">{errors.tag_ids.message}</p>
                 )}
               </div>
               <FileDropzone

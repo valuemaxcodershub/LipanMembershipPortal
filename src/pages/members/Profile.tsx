@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   Label,
@@ -26,6 +26,11 @@ import { BiFile } from "react-icons/bi";
 import CameraCapture from "../../components/UI/CapturePhoto";
 import { dataUrlToFile } from "../../utils/app/text";
 import { PageMeta } from "../../utils/app/pageMetaValues";
+import axios from "../../config/axios";
+import PasswordInput from "../../components/UI/PasswordInput";
+import { useApp } from "../../hooks/app";
+import { toast } from "react-toastify";
+import { Skeleton } from "../../components/UI/Skeleton";
 
 const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2MB
 const SUPPORTED_FORMATS = ["image/jpeg", "image/png", "image/jpg"];
@@ -44,35 +49,50 @@ const profileSchema = yup.object().shape({
   zip_code: yup.string(),
   phone: yup.string().required("Phone number is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
-  level_of_learners: yup.string().required("Please select a level of learners"),
+  areas_of_interest: yup
+    .array()
+    .min(1, "Please select at least one area of interest"),
+  level_of_learners: yup
+    .string()
+    .required("Please select one level of learners"),
   bio: yup.string(),
-  profile_pic: yup
-    .mixed()
-    .test("required", "File is required", (value) => {
-      return value && Array.isArray(value) && value.length > 0;
-    })
-    .test("fileSize", "File size is too large", (value) => {
-      return (
-        value && value instanceof FileList && value[0]?.size <= FILE_SIZE_LIMIT
-      );
-    })
-    .test("fileType", "Unsupported file format", (value) => {
-      return value && SUPPORTED_FORMATS.includes((value as FileList)[0]?.type);
-    }),
+  profile_pic: yup.mixed(),
+  // .test("fileSize", "File size is too large", (value) => {
+  //   return (
+  //     value && value instanceof FileList && value[0]?.size <= FILE_SIZE_LIMIT
+  //   );
+  // })
+  // .test("fileType", "Unsupported file format", (value) => {
+  //   return value && SUPPORTED_FORMATS.includes((value as FileList)[0]?.type);
+  // }),
 });
 
 const passwordSchema = yup.object().shape({
-  password: yup.string().min(6).required("Password is required"),
-  confirm_password: yup
+  old_password: yup
     .string()
-    .oneOf([yup.ref("password")], "Passwords must match"),
+    .min(6, "Current password must be at least 6 characters")
+    .required("Current password is required"),
+  new_password1: yup
+    .string()
+    .min(6, "New password must be at least 6 characters")
+    .required("New password is required"),
+  new_password2: yup
+    .string()
+    .oneOf([yup.ref("new_password1")], "Passwords must match"),
 });
 
+type ProfileSettingsType = yup.InferType<typeof profileSchema>;
+type PasswordChangeType = yup.InferType<typeof passwordSchema>;
+
 const ProfileSettingsPage = () => {
+  const { areasOfInterest, levelOfLearners } = useApp();
   const {
     register,
     handleSubmit,
     setValue,
+    reset,
+    watch,
+    trigger,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(profileSchema),
@@ -81,25 +101,137 @@ const ProfileSettingsPage = () => {
   const {
     register: registerPassword,
     handleSubmit: handlePasswordSubmit,
+    reset: passwordReset,
     formState: { errors: passwordErrors },
   } = useForm({
     resolver: yupResolver(passwordSchema),
   });
-
-  const [avatarUrl, setAvatarUrl] = useState("https://picsum.photos/200");
+  const file = watch("profile_pic") as FileList;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showPhotoSelectionOpen, setShowPhotoSelectionOpen] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [showCaptureModal, setShowCaptureModal] = useState(false);
 
-  const onSubmit = (data: any) => {
-    console.log("Profile Update", data);
+  const onSubmit = async (data: ProfileSettingsType) => {
+    // const formattedData = {...data, level_of_learners: Number(data.level_of_learners), areas_of_interest: data.areas_of_interest.map(Number)};
+    console.log(data);
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "areas_of_interest") {
+        value.forEach((keyValue: string) => {
+          formData.append(key, keyValue);
+        });
+      } else if (key === "profile_pic" && value) {
+        formData.append(key, (value as FileList)?.[0]);
+        console.log((value as FileList)?.[0]);
+      } else {
+        formData.append(key, value as string);
+      }
+    });
+
+    const toastId = toast.loading("Updating Profile changes....", {
+      position: "top-center",
+    });
+
+    try {
+      const response = await axios.patch("/auth/user/", formData);
+      console.log(response);
+      toast.update(toastId, {
+        render: response.data?.detail || "Updates saved successfully",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      fetchProfile();
+    } catch (err: any) {
+      console.error(err.response);
+      toast.update(toastId, {
+        render:
+          err?.response?.data?.detail || "Error updating profile, try again",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
   };
 
-  const onChangePassword = (data: any) => {
-    console.log("Change Password", data);
+  const onChangePassword = async (data: PasswordChangeType) => {
+    const toastId = toast.loading("Changing Account Password....", {
+      position: "top-center",
+    });
+    try {
+      const response = await axios.post("/auth/password/change/", data);
+      passwordReset();
+      toast.update(toastId, {
+        render: response?.data?.detail || "Password change successfull",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.update(toastId, {
+        render: err?.response?.data?.detail || "Error changing password",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
   };
 
   const togglePhotoSelect = () => setShowPhotoSelectionOpen((prev) => !prev);
   const toggleCaptureModal = () => setShowCaptureModal((prev) => !prev);
+
+  const fetchProfile = async () => {
+    setIsFetching(true);
+    try {
+      const { data } = await axios.get("/accounts/user/profile/");
+      // console.log(data)
+      const { profile_pic, ...otherData } = data;
+      reset({ ...otherData, profile_pic: undefined });
+      setAvatarUrl(
+        profile_pic ? `${import.meta.env.VITE_API_URL + profile_pic}` : null
+      );
+      setIsFetching(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (file.length) {
+        console.log(file);
+        const valid = await trigger(["profile_pic"]);
+        console.log(valid);
+        if (!valid) {
+          return toast.error(errors.profile_pic?.message as string);
+        }
+        togglePhotoSelect();
+        const url = URL.createObjectURL(file[0]);
+        console.log(url);
+        setAvatarUrl(url);
+      }
+    })();
+  }, [file]);
+
+  if (isFetching) {
+    return (
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <Skeleton className="h-10 w-1/2 mb-4" />
+        <div className="grid grid-cols-1 gap-6">
+          {/* Profile Info Form Skeleton */}
+          <Skeleton className="h-[380px] w-full" />
+          {/* Password Change Form Skeleton */}
+          <Skeleton className="h-[260px] w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -122,7 +254,7 @@ const ProfileSettingsPage = () => {
               <div className="grid grid-cols-5 gap-4">
                 <div className="relative flex items-center gap-4 mb-4 col-span-2">
                   <img
-                    src={avatarUrl}
+                    src={avatarUrl || "/avatar_placeholder.png"}
                     className="h-[300px] w-full rounded-xl object-cover"
                     alt="User avatar"
                   />
@@ -153,9 +285,10 @@ const ProfileSettingsPage = () => {
                       helperText={errors.title?.message}
                     >
                       <option value="">Select Title</option>
-                      <option>Mr</option>
-                      <option>Ms</option>
-                      <option>Dr</option>
+                      <option value="mr">Mr.</option>
+                      <option value="ms">Ms.</option>
+                      <option value="dr">Dr.</option>
+                      <option value="prof">Prof.</option>
                     </Select>
                   </div>
                   <div>
@@ -166,9 +299,9 @@ const ProfileSettingsPage = () => {
                       helperText={errors.gender?.message}
                     >
                       <option value="">Select Gender</option>
-                      <option>Male</option>
-                      <option>Female</option>
-                      <option>Other</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
                     </Select>
                   </div>
                 </div>
@@ -244,20 +377,6 @@ const ProfileSettingsPage = () => {
               </div>
 
               <div>
-                <Label value="Level of Learners" />
-                <Select
-                  {...register("level_of_learners")}
-                  color={errors.level_of_learners ? "failure" : undefined}
-                  helperText={errors.level_of_learners?.message}
-                >
-                  <option value="">Select Level</option>
-                  <option>Beginner</option>
-                  <option>Intermediate</option>
-                  <option>Advanced</option>
-                </Select>
-              </div>
-
-              <div>
                 <Label value="Short Bio / About You" />
                 <Textarea
                   rows={10}
@@ -265,6 +384,59 @@ const ProfileSettingsPage = () => {
                   color={errors.bio ? "failure" : undefined}
                   helperText={errors.bio?.message}
                 />
+              </div>
+
+              <h3 className="text-xl font-semibold text-gray-700 dark:text-white pt-32 mb-4">
+                Change Preferences
+              </h3>
+
+              <div className="mb-4">
+                <Label value="Level of Learners" />
+                <Select
+                  {...register("level_of_learners")}
+                  helperText={errors.level_of_learners?.message}
+                  color={errors.level_of_learners ? "failure" : undefined}
+                >
+                  <option value="">---Select---</option>
+                  {levelOfLearners.map((option, index) => (
+                    <option key={index} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <div
+                  className={`mb-4 flex flex-wrap gap-3 rounded-md p-5 border border-${errors.areas_of_interest ? "red-500" : "gray-300"}`}
+                >
+                  {areasOfInterest.map((interest, index) => (
+                    <label
+                      key={index}
+                      htmlFor={`checkbox-${index}`}
+                      className="flex flex-grow items-center justify-center gap-2 rounded-lg border-2 border-gray-200 p-2 text-[13.5px] shadow-sm transition-all hover:shadow-lg peer-checked:border-blue-500"
+                    >
+                      <input
+                        id={`checkbox-${index}`}
+                        type="checkbox"
+                        value={interest.id}
+                        defaultChecked={watch("areas_of_interest")?.includes(
+                          interest.id
+                        )}
+                        {...register("areas_of_interest")}
+                        className="peer rounded-md"
+                      />
+                      <p className="cursor-pointer group dark:text-white peer-checked:text-blue-600">
+                        {interest.name}
+                      </p>
+                    </label>
+                  ))}
+                </div>
+                {errors.areas_of_interest && (
+                  <i className="text-sm text-red-500">
+                    {errors.areas_of_interest.message}
+                  </i>
+                )}
               </div>
 
               <Button color="blue" type="submit" fullSized>
@@ -284,26 +456,27 @@ const ProfileSettingsPage = () => {
               className="space-y-4"
             >
               <div>
-                <Label value="New Password" />
-                <TextInput
-                  type="password"
-                  icon={HiLockClosed}
-                  {...registerPassword("password")}
-                  color={passwordErrors.password ? "failure" : undefined}
-                  helperText={passwordErrors.password?.message}
+                <Label value="Current Password" />
+                <PasswordInput
+                  {...registerPassword("old_password")}
+                  error={passwordErrors.old_password}
                 />
               </div>
-              <div>
-                <Label value="Confirm Password" />
-                <TextInput
-                  type="password"
-                  icon={HiLockClosed}
-                  {...registerPassword("confirm_password")}
-                  color={
-                    passwordErrors.confirm_password ? "failure" : undefined
-                  }
-                  helperText={passwordErrors.confirm_password?.message}
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div>
+                  <Label value="New Password" />
+                  <PasswordInput
+                    {...registerPassword("new_password1")}
+                    error={passwordErrors.new_password1}
+                  />
+                </div>
+                <div>
+                  <Label value="Confirm New Password" />
+                  <PasswordInput
+                    {...registerPassword("new_password2")}
+                    error={passwordErrors.new_password2}
+                  />
+                </div>
               </div>
 
               <Button color="blue" type="submit" fullSized>
@@ -331,7 +504,7 @@ const ProfileSettingsPage = () => {
                   <input
                     id="avatar-upload"
                     type="file"
-                    accept="image/*"
+                    accept={SUPPORTED_FORMATS.join(", ")}
                     className="hidden"
                     {...register("profile_pic")}
                   />
@@ -364,8 +537,7 @@ const ProfileSettingsPage = () => {
             <CameraCapture
               onCapture={(url, filename) => {
                 const file = dataUrlToFile(url, filename);
-                setValue("profile_pic", file);
-                setAvatarUrl(URL.createObjectURL(file));
+                setValue("profile_pic", [file]);
                 toggleCaptureModal();
               }}
             />
