@@ -17,7 +17,6 @@ The application requires the following environment variables to be set up for bo
 
 ```
 VITE_API_URL=http://localhost:3000
-VITE_FLUTTERWAVE_PUBLIC_KEY=your-flutterwave-public-key //optional not required by project
 VITE_PAYSTACK_PUBLIC_KEY=your-paystack-public-key
 ```
 
@@ -25,7 +24,6 @@ VITE_PAYSTACK_PUBLIC_KEY=your-paystack-public-key
 
 ```
 VITE_API_URL=https://api.lipanonline.org
-VITE_FLUTTERWAVE_PUBLIC_KEY=your-flutterwave-public-key // optional not required by project
 VITE_PAYSTACK_PUBLIC_KEY=your-paystack-public-key
 ```
 

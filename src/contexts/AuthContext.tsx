@@ -170,7 +170,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
 
-  useProfileCompletionGuard(isOpen, runUserProfileCompletionCheck);
+  useProfileCompletionGuard(isOpen, runUserProfileCompletionCheck, state.user);
 
   const showLogoutModal = () => dispatch({ type: "SHOW_LOGOUT_MODAL" });
   const hideLogoutModal = () => dispatch({ type: "HIDE_LOGOUT_MODAL" });

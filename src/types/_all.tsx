@@ -7,13 +7,13 @@ export interface MembershipPlan {
 
 export type Transaction = {
   id: string;
-  date: string;
-  time: string;
   amount: string;
-  fee: string;
-  total: string;
-  paymentMethod: string;
-  recipient: string;
+  created_at: string;
+  description: string;
+  payment_method: string;
   status: string;
-  authCode: string;
+  subscriber: number;
+  total: string;
+  transaction_id: string;
+  transaction_ref: string;
 };

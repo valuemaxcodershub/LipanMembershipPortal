@@ -6,6 +6,8 @@ import jsPDF from "jspdf";
 import { Transaction } from "../../types/_all";
 import { BiDownload, BiImage, BiSolidFilePdf } from "react-icons/bi";
 import { Logo } from "./Logo";
+import { formatDate } from "../../utils/app/time";
+import { useAuth } from "../../hooks/auth";
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ const TransactionReceiptModal = ({
   onClose,
   transaction,
 }: ReceiptModalProps) => {
+  const {user} = useAuth()
   const [isPrinting, setIsPrinting] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -32,7 +35,6 @@ const TransactionReceiptModal = ({
     if (!printRef.current) return;
     const canvas = await html2canvas(printRef.current, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-    console.log(imgData);
     return { canvas, imgData };
   };
 
@@ -97,13 +99,11 @@ const TransactionReceiptModal = ({
                 <Table.Cell className="font-semibold">
                   Transaction ID:
                 </Table.Cell>
-                <Table.Cell>{transaction?.id}</Table.Cell>
+                <Table.Cell>{transaction?.transaction_id}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Date & Time:</Table.Cell>
-                <Table.Cell>
-                  {transaction?.date} at {transaction?.time}
-                </Table.Cell>
+                <Table.Cell>{formatDate(transaction?.created_at as string)}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Amount Paid:</Table.Cell>
@@ -115,34 +115,34 @@ const TransactionReceiptModal = ({
                 <Table.Cell className="font-semibold">
                   Transaction Fee:
                 </Table.Cell>
-                <Table.Cell>{transaction?.fee}</Table.Cell>
+                <Table.Cell>₦ {0}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Total Amount:</Table.Cell>
                 <Table.Cell className="font-bold text-blue-600 dark:text-blue-400">
-                  {transaction?.total}
+                  ₦ {Number(transaction?.amount) + 0}
                 </Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">
                   Payment Method:
                 </Table.Cell>
-                <Table.Cell>{transaction?.paymentMethod}</Table.Cell>
+                <Table.Cell>{transaction?.payment_method}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Recipient:</Table.Cell>
-                <Table.Cell>{transaction?.recipient}</Table.Cell>
+                <Table.Cell>{user?.full_name}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">
-                  Authorization Code:
+                  Transaction Reference:
                 </Table.Cell>
-                <Table.Cell>{transaction?.authCode}</Table.Cell>
+                <Table.Cell>{transaction?.transaction_ref}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Status:</Table.Cell>
                 <Table.Cell
-                  className={`font-semibold ${transaction?.status === "Success" ? "text-green-500" : "text-red-500"}`}
+                  className={`font-semibold ${transaction?.status === "success" ? "text-green-500" : "text-red-500"}`}
                 >
                   {transaction?.status}
                 </Table.Cell>
@@ -154,9 +154,9 @@ const TransactionReceiptModal = ({
       <Modal.Footer className="flex justify-end">
         <Dropdown
           label={
-            <Button size="sm" gradientDuoTone="purpleToBlue">
+            <Button size="md" gradientDuoTone="purpleToBlue">
               <div className="flex justify-center items-center">
-                <BiDownload className="mr-2 text-lg" />
+                <BiDownload className="mr-2 h-5 text-lg" /> Download
               </div>
             </Button>
           }
@@ -166,13 +166,13 @@ const TransactionReceiptModal = ({
         >
           <Button as={Dropdown.Item} color="gray" onClick={handleDownloadPIC}>
             <div className="flex justify-center items-center">
-              <BiImage className="mr-2 text-lg" /> Save as PNG
+              <BiImage className="mr-2 text-lg" /> As PNG
             </div>
           </Button>
           <Dropdown.Divider />
           <Button as={Dropdown.Item} color="gray" onClick={handleDownloadPDF}>
             <div className="flex justify-center items-center">
-              <BiSolidFilePdf className="mr-2 text-lg" /> Save as PDF
+              <BiSolidFilePdf className="mr-2 text-lg" /> As PDF
             </div>
           </Button>
         </Dropdown>

@@ -42,6 +42,7 @@ import { useAuth } from "./hooks/auth";
 import Cookies from "js-cookie";
 import AdminEventUsersPage from "./pages/admin/EventsUsers";
 import NotAccessPage from "./pages/members/NoAccess";
+import AdminBenefitsListPage from "./pages/admin/MembershipBenefits";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -122,6 +123,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/admin/dashboard" />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="memberships" element={<AdminMembershipsListPage />} />
+        <Route path="membership-benefits" element={<AdminBenefitsListPage />} />
         <Route
           path="memberships/:value"
           element={<MembershipCreateEditPage />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   FiBook,
+  FiBookmark,
   FiBookOpen,
   FiGift,
   FiHome,
@@ -31,6 +32,11 @@ function AdminLayout() {
       name: "Memberships",
       icon: FiGift,
       path: "memberships",
+    },
+    {
+      name: "Membership Benefits",
+      icon: FiBookmark,
+      path: "membership-benefits",
     },
     {
       name: "Manage Users",

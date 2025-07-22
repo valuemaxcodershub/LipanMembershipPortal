@@ -1,14 +1,20 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { UserType } from "../contexts/createContexts/auth";
 
 const useProfileCompletionGuard = (
   isOpen: boolean,
-  runUserProfileCompletionCheck: () => void
+  runUserProfileCompletionCheck: () => void,
+  user: UserType
 ) => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (pathname.startsWith("/member") && pathname !== "/member/profile") {
+    if (
+      pathname.startsWith("/member") &&
+      pathname !== "/member/profile" &&
+      !["unpaid", "pending"].includes(user?.payment_status as string)
+    ) {
       runUserProfileCompletionCheck(); // Initial check immediately
 
       const id = setInterval(() => {
