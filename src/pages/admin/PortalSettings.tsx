@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Button, Card, Label, TextInput } from "flowbite-react";
+import { Button, Card, Label, TextInput, Tooltip } from "flowbite-react";
 import { HiOutlineCog } from "react-icons/hi";
 import Switch from "../../components/UI/Switch";
 import { Skeleton } from "../../components/UI/Skeleton";
 import axios from "../../config/axios";
 import { Id, toast } from "react-toastify";
+import { FaTimes, FaTrash } from "react-icons/fa";
+import ConfirmationModal from "../../components/UI/ConfirmModal";
 
 function PortalSettingsPage() {
   const [settings, setSettings] = useState({
@@ -12,7 +14,7 @@ function PortalSettingsPage() {
     allow_contact_admin: true,
     allow_journal_upload: true,
   });
-  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const [areasOfInterest, setAreasOfInterest] = useState<any[]>([]);
   const [levels, setLevels] = useState<any[]>([]);
@@ -20,6 +22,12 @@ function PortalSettingsPage() {
   const [newLevel, setNewLevel] = useState("");
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState("");
+
+  const [confirmAction, setConfirmAction] = useState<null | {
+    type: "delete";
+    isFor: "levels" | "interests";
+    data: { id: number; name: string };
+  }>(null);
 
   type SettingsKey = keyof typeof settings;
 
@@ -91,6 +99,22 @@ function PortalSettingsPage() {
       });
       setNewLevel("");
       setNewArea("");
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    setIsActionLoading(true);
+    try {
+      await axios.delete(`/${confirmAction?.isFor}/${confirmAction?.data.id}/`);
+      toast.success(
+        `${confirmAction?.isFor === "levels" ? "level of learners" : "Area of interest"} "${confirmAction?.data.name}" has been deleted`
+      );
+      fetchData();
+    } catch (err) {
+      toast.error("Failed to delete, try again");
+    } finally {
+      setConfirmAction(null);
+      setIsActionLoading(false);
     }
   };
 
@@ -248,9 +272,23 @@ function PortalSettingsPage() {
               {areasOfInterest.map((item, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+                  className="px-3 py-1 flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
                 >
                   {item.name}
+                  <Tooltip content="Delete">
+                    <button
+                      onClick={() =>
+                        setConfirmAction({
+                          type: "delete",
+                          isFor: "interests",
+                          data: item,
+                        })
+                      }
+                      className="text-[#ff0000] active:scale-75 transition-transform ml-3 border border-[#ff0000] rounded p-1"
+                    >
+                      <FaTrash size={9} />
+                    </button>
+                  </Tooltip>
                 </span>
               ))}
             </div>
@@ -268,7 +306,7 @@ function PortalSettingsPage() {
                 color="blue"
                 className="w-full sm:w-auto"
               >
-                Add Area
+                Add Interest
               </Button>
             </div>
           </div>
@@ -285,9 +323,23 @@ function PortalSettingsPage() {
               {levels.map((item, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium"
+                  className="px-3 py-1 flex items-center bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium"
                 >
                   {item.name}
+                  <Tooltip content="Delete">
+                    <button
+                      onClick={() =>
+                        setConfirmAction({
+                          type: "delete",
+                          isFor: "levels",
+                          data: item,
+                        })
+                      }
+                      className="text-[#ff0000] active:scale-75 transition-transform ml-3 border border-[#ff0000] rounded p-1"
+                    >
+                      <FaTrash size={9} />
+                    </button>
+                  </Tooltip>
                 </span>
               ))}
             </div>
@@ -378,6 +430,20 @@ function PortalSettingsPage() {
           </div>
         </Card>
       </div>
+      <ConfirmationModal
+        open={!!confirmAction}
+        loading={isActionLoading}
+        onClose={() => !isActionLoading && setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title="Confirm Action"
+        message={`Are you sure you want to delete this ${
+          confirmAction?.isFor === "levels"
+            ? "Level of Learners"
+            : "Area of interest"
+        }?`}
+
+        // destructive
+      />
     </div>
   );
 }

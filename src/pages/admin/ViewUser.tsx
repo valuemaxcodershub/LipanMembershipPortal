@@ -23,7 +23,8 @@ import { useAuth } from "../../hooks/auth";
 
 // 🔵 Validation Schema
 const profileSchema = yup.object().shape({
-  full_name: yup.string().required("Full Name is required"),
+  first_name: yup.string().required("First Name is required"),
+  last_name: yup.string().required("Last Name is required"),
   title: yup.string().required("Title is required"),
   gender: yup.string().required("Gender is required"),
   phone: yup.string().required("Phone is required"),
@@ -324,11 +325,19 @@ export default function ViewUserPage() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label value="Full Name" />
+                <Label value="First Name" />
                 <TextInput
-                  {...register("full_name")}
-                  color={errors.full_name ? "failure" : undefined}
-                  helperText={errors.full_name?.message}
+                  {...register("first_name")}
+                  color={errors.first_name ? "failure" : undefined}
+                  helperText={errors.first_name?.message}
+                />
+              </div>
+              <div>
+                <Label value="Last Name" />
+                <TextInput
+                  {...register("last_name")}
+                  color={errors.last_name ? "failure" : undefined}
+                  helperText={errors.last_name?.message}
                 />
               </div>
               <div>

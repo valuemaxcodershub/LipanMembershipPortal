@@ -80,6 +80,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const [isOpen, setIsOpen] = useState(false);
+  const { pathname } = useLocation();
 
   // Helper functions
   const setAuthCookies = (user: UserType, tokens: Tokens) => {
@@ -124,7 +125,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         clearAuthCookies();
       }
-      dispatch({ type: "SET_isLOADING", payload: false });
+        dispatch({ type: "SET_isLOADING", payload: false });
     };
 
     initializeAuth();
@@ -169,14 +170,17 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-
-  useProfileCompletionGuard(isOpen, runUserProfileCompletionCheck, state.user);
+  
+    useProfileCompletionGuard(
+      isOpen,
+      runUserProfileCompletionCheck,
+      state?.user as UserType
+    );
 
   const showLogoutModal = () => dispatch({ type: "SHOW_LOGOUT_MODAL" });
   const hideLogoutModal = () => dispatch({ type: "HIDE_LOGOUT_MODAL" });
 
   // Logout Modal Component
-  
 
   return (
     <AuthContext.Provider

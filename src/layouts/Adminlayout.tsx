@@ -9,6 +9,7 @@ import {
   FiMail,
   FiSettings,
   FiSpeaker,
+  FiUser,
   FiUsers,
 } from "react-icons/fi";
 import { useBreakpoint } from "../hooks/breakpoint";
@@ -67,6 +68,11 @@ function AdminLayout() {
       name: "Portal Settings",
       icon: FiSettings,
       path: "portal-settings",
+    },
+    {
+      name: "Profile",
+      icon: FiUser,
+      path: "profile",
     },
 
     // {

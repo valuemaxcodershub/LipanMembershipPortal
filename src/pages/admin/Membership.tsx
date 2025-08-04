@@ -13,7 +13,7 @@ interface Membership {
   name: string;
   description: string;
   price: number;
-  permissions: any[];
+  benefits: any[];
 }
 
 export default function AdminMembershipsListPage() {
@@ -52,6 +52,7 @@ export default function AdminMembershipsListPage() {
       await axios.delete(`/membership/${id}/`);
       setMemberships((prev) => prev.filter((m) => m.id !== id));
       toast.success("Membership deleted successfully");
+      setConfirmAction(null);
     } catch (err: any) {
       toast.error(
         err?.response?.data?.detail ||
@@ -133,8 +134,8 @@ export default function AdminMembershipsListPage() {
                   ₦{membership.price}
                 </p>
                 <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300 max-h-[200px] overflow-y-auto">
-                  {membership.permissions.map((permission, idx) => (
-                    <li key={idx}>{permission.label}</li>
+                  {membership.benefits.map((benefit, idx) => (
+                    <li key={idx}>{benefit.name}</li>
                   ))}
                 </ul>
               </Card>
@@ -146,12 +147,12 @@ export default function AdminMembershipsListPage() {
         theme="failure"
         title="Confirm Action"
         message="Are you sure you want to delete this membership plan? This action cannot be undone."
-        onClose={() => setConfirmAction(null)}
+        onClose={() => !isActionLoading && setConfirmAction(null)}
         onConfirm={() => {
           if (confirmAction?.action === "delete") {
             handleDelete(confirmAction.membership.id);
           }
-          setConfirmAction(null);
+          
         }}
         loading={isActionLoading}
       />

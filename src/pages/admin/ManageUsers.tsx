@@ -52,7 +52,8 @@ type User = {
 
 const addUserSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
-  full_name: yup.string().required("Full name is required"),
+  first_name: yup.string().required("First name is required"),
+  last_name: yup.string().required("Last name is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   phone: yup.string().required("Phone number is required"),
   gender: yup.string().required("Gender is required"),
@@ -520,13 +521,23 @@ const UserManagementPage = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="full_name" value="Full Name" />
+              <Label htmlFor="first_name" value="First Name" />
               <TextInput
-                id="full_name"
+                id="first_name"
                 disabled={isSubmitting}
-                {...register("full_name")}
-                color={errors.full_name ? "failure" : undefined}
-                helperText={errors.full_name?.message}
+                {...register("first_name")}
+                color={errors.first_name ? "failure" : undefined}
+                helperText={errors.first_name?.message}
+              />
+            </div>
+            <div>
+              <Label htmlFor="last_name" value="Last Name" />
+              <TextInput
+                id="last_name"
+                disabled={isSubmitting}
+                {...register("last_name")}
+                color={errors.last_name ? "failure" : undefined}
+                helperText={errors.last_name?.message}
               />
             </div>
             <div>

@@ -13,7 +13,8 @@ export type SignInSchemaType = yup.InferType<typeof signInSchema>;
 export const signUpSchema = yup.object({
   title: yup.string().required("Please select your title"),
   gender: yup.string().required("Please select your gender"),
-  full_name: yup.string().required("Full Name is required"),
+  first_name: yup.string().required("First Name is required"),
+  last_name: yup.string().required("Last Name is required"),
   organization: yup.string().required("Organization is required"),
   mailing_address: yup.string().required("Mailing address is required"),
   city: yup.string().required("City is required"),

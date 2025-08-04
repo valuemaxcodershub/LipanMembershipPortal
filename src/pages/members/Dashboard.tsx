@@ -113,7 +113,7 @@ function MemberDashboard() {
         {/* Welcome Section */}
         <Card className="p-6 shadow-md">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome Back {user?.full_name}
+            Welcome Back {user?.first_name} {user?.last_name}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             {dashboard?.subscription?.membership_type

@@ -43,6 +43,7 @@ import Cookies from "js-cookie";
 import AdminEventUsersPage from "./pages/admin/EventsUsers";
 import NotAccessPage from "./pages/members/NoAccess";
 import AdminBenefitsListPage from "./pages/admin/MembershipBenefits";
+import AdminProfileSettingsPage from "./pages/admin/Profile";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -143,6 +144,7 @@ function AppRoutes() {
         />
         <Route path="user-reports" element={<AdminContactMessagesPage />} />
         <Route path="portal-settings" element={<PortalSettingsPage />} />
+        <Route path="profile" element={<AdminProfileSettingsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -6,9 +6,8 @@ import {
   TextInput,
   Textarea,
   Label,
-  Select,
 } from "flowbite-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
 import { toast } from "react-toastify";
 import { Skeleton } from "../../components/UI/Skeleton";
@@ -31,118 +30,124 @@ const defaultBenefitsData = [
   {
     id: "1",
     name: "Premium Content Access",
-    description: "Access to exclusive premium content, articles, and resources not available to regular users.",
+    description:
+      "Access to exclusive premium content, articles, and resources not available to regular users.",
     // category: "access",
     icon: "🔓",
     is_active: true,
     created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-01-15T10:30:00Z"
+    updated_at: "2024-01-15T10:30:00Z",
   },
   {
     id: "2",
     name: "Early Access",
-    description: "Get early access to new features, products, and content before they're released to the public.",
+    description:
+      "Get early access to new features, products, and content before they're released to the public.",
     // category: "access",
     icon: "⚡",
     is_active: true,
     created_at: "2024-01-15T11:00:00Z",
-    updated_at: "2024-01-15T11:00:00Z"
+    updated_at: "2024-01-15T11:00:00Z",
   },
   {
     id: "3",
     name: "VIP Area Access",
-    description: "Access to exclusive VIP areas, forums, and member-only sections of the platform.",
+    description:
+      "Access to exclusive VIP areas, forums, and member-only sections of the platform.",
     // category: "access",
     icon: "👑",
     is_active: true,
     created_at: "2024-01-15T11:30:00Z",
-    updated_at: "2024-01-15T11:30:00Z"
+    updated_at: "2024-01-15T11:30:00Z",
   },
 
   // Feature Benefits
   {
     id: "4",
     name: "Advanced Analytics",
-    description: "Access to detailed analytics, reports, and insights about your usage and performance.",
+    description:
+      "Access to detailed analytics, reports, and insights about your usage and performance.",
     // category: "features",
     icon: "📊",
     is_active: true,
     created_at: "2024-01-15T12:00:00Z",
-    updated_at: "2024-01-15T12:00:00Z"
+    updated_at: "2024-01-15T12:00:00Z",
   },
   {
     id: "5",
     name: "Custom Themes",
-    description: "Ability to customize the interface with premium themes and personalization options.",
+    description:
+      "Ability to customize the interface with premium themes and personalization options.",
     // category: "features",
     icon: "🎨",
     is_active: true,
     created_at: "2024-01-15T12:30:00Z",
-    updated_at: "2024-01-15T12:30:00Z"
+    updated_at: "2024-01-15T12:30:00Z",
   },
   {
     id: "6",
     name: "API Access",
-    description: "Full API access for integration with third-party applications and custom development.",
+    description:
+      "Full API access for integration with third-party applications and custom development.",
     // category: "features",
     icon: "🔌",
     is_active: true,
     created_at: "2024-01-15T13:00:00Z",
-    updated_at: "2024-01-15T13:00:00Z"
+    updated_at: "2024-01-15T13:00:00Z",
   },
   {
     id: "7",
     name: "Bulk Operations",
-    description: "Perform bulk operations on data, users, and content for efficient management.",
+    description:
+      "Perform bulk operations on data, users, and content for efficient management.",
     // category: "features",
     icon: "⚙️",
     is_active: false,
     created_at: "2024-01-15T13:30:00Z",
-    updated_at: "2024-01-15T13:30:00Z"
+    updated_at: "2024-01-15T13:30:00Z",
   },
 
   // Content Benefits
   {
     id: "8",
     name: "HD Video Streaming",
-    description: "Stream videos in high definition quality with no buffering or quality restrictions.",
+    description:
+      "Stream videos in high definition quality with no buffering or quality restrictions.",
     // category: "content",
     icon: "🎬",
     is_active: true,
     created_at: "2024-01-15T14:00:00Z",
-    updated_at: "2024-01-15T14:00:00Z"
+    updated_at: "2024-01-15T14:00:00Z",
   },
   {
     id: "9",
     name: "Offline Downloads",
-    description: "Download content for offline viewing and access without internet connection.",
+    description:
+      "Download content for offline viewing and access without internet connection.",
     // category: "content",
     icon: "📥",
     is_active: true,
     created_at: "2024-01-15T14:30:00Z",
-    updated_at: "2024-01-15T14:30:00Z"
+    updated_at: "2024-01-15T14:30:00Z",
   },
   {
     id: "10",
     name: "Exclusive Webinars",
-    description: "Access to exclusive webinars, workshops, and live sessions with industry experts.",
+    description:
+      "Access to exclusive webinars, workshops, and live sessions with industry experts.",
     // category: "content",
     icon: "🎓",
     is_active: true,
     created_at: "2024-01-15T15:00:00Z",
-    updated_at: "2024-01-15T15:00:00Z"
-  }
+    updated_at: "2024-01-15T15:00:00Z",
+  },
 ];
 
 interface Benefit {
   id: string;
   name: string;
   description: string;
-  // category: string;
-  icon?: string;
-  is_active: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 // Validation schema
@@ -164,8 +169,8 @@ const benefitSchema = yup.object().shape({
   //     ["access", "features", "content", "support", "discounts", "other"],
   //     "Invalid category"
   //   ),
-  icon: yup.string().max(50, "Icon must not exceed 50 characters"),
-  is_active: yup.boolean().required("Active status is required"),
+  // icon: yup.string().max(50, "Icon must not exceed 50 characters"),
+  // is_active: yup.boolean().required("Active status is required"),
 });
 
 type BenefitForm = yup.InferType<typeof benefitSchema>;
@@ -203,26 +208,25 @@ function AdminBenefitsListPage() {
     defaultValues: {
       name: "",
       description: "",
-      icon: "",
+      // icon: "",
     },
   });
 
   const fetchBenefits = async () => {
+    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const { data } = await axios.get("/benefits/");
+      console.log(data);
+      setBenefits(data);
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.detail ||
+          "Error fetching benefits. Please try again."
+      );
+    } finally {
       setIsLoading(false);
-    setBenefits(defaultBenefitsData);
-    // try {
-    //   setIsLoading(true);
-    //   const { data } = await axios.get("/benefits/");
-    //   setBenefits(data.results);
-    //   // console.log(data.results);
-    // } catch (err: any) {
-    //   toast.error(
-    //     err?.response?.data?.detail ||
-    //       "Error fetching benefits. Please try again."
-    //   );
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    }
   };
 
   useEffect(() => {
@@ -234,8 +238,8 @@ function AdminBenefitsListPage() {
       name: "",
       description: "",
       // category: "features",
-      icon: "",
-      is_active: true,
+      // icon: "",
+      // is_active: true,
     });
     setEditingBenefit(null);
     setShowCreateForm(false);
@@ -249,16 +253,13 @@ function AdminBenefitsListPage() {
           `/benefits/${editingBenefit.id}/`,
           data
         );
-        setBenefits((prev) =>
-          prev.map((b) => (b.id === editingBenefit.id ? response.data : b))
-        );
         toast.success("Benefit updated successfully");
       } else {
         // Create new benefit
-        const response = await axios.post("/benefits/", data);
-        setBenefits((prev) => [response.data, ...prev]);
+        await axios.post("/benefits/", data);
         toast.success("Benefit created successfully");
       }
+      fetchBenefits();
       resetForm();
     } catch (err: any) {
       toast.error(
@@ -273,8 +274,8 @@ function AdminBenefitsListPage() {
     setValue("name", benefit.name);
     setValue("description", benefit.description);
     // setValue("category", benefit.category);
-    setValue("icon", benefit.icon || "");
-    setValue("is_active", benefit.is_active);
+    // setValue("icon", benefit.icon || "");
+    // setValue("is_active", benefit.is_active);
     setShowCreateForm(true);
   };
 
@@ -284,6 +285,7 @@ function AdminBenefitsListPage() {
       await axios.delete(`/benefits/${id}/`);
       setBenefits((prev) => prev.filter((b) => b.id !== id));
       toast.success("Benefit deleted successfully");
+      setConfirmAction(null);
     } catch (err: any) {
       toast.error(
         err?.response?.data?.detail ||
@@ -353,37 +355,38 @@ function AdminBenefitsListPage() {
 
       {/* Create/Edit Form */}
       {showCreateForm && (
-        <Card className="mb-6 bg-white dark:bg-gray-800">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                {editingBenefit ? "Edit Benefit" : "Create New Benefit"}
-              </h3>
-              <Button
-                color="gray"
-                size="sm"
-                onClick={resetForm}
-                disabled={isSubmitting}
-              >
-                <HiX className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="name" value="Benefit Name *" />
-                <TextInput
-                  {...register("name")}
-                  id="name"
-                  type="text"
-                  placeholder="Enter benefit name"
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 h-screen p-4">
+          <Card className="mb-6 bg-white dark:bg-gray-800 w-full max-w-xl shadow-lg">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  {editingBenefit ? "Edit Benefit" : "Create New Benefit"}
+                </h3>
+                <Button
+                  color="gray"
+                  size="sm"
+                  onClick={resetForm}
                   disabled={isSubmitting}
-                  color={errors.name ? "failure" : "gray"}
-                  helperText={errors.name?.message}
-                />
+                >
+                  <HiX className="h-4 w-4" />
+                </Button>
               </div>
 
-              {/* <div>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="name" value="Benefit Name *" />
+                  <TextInput
+                    {...register("name")}
+                    id="name"
+                    type="text"
+                    placeholder="Enter benefit name"
+                    disabled={isSubmitting}
+                    color={errors.name ? "failure" : "gray"}
+                    helperText={errors.name?.message}
+                  />
+                </div>
+
+                {/* <div>
                 <Label htmlFor="category" value="Category *" />
 
                 <Select
@@ -400,69 +403,70 @@ function AdminBenefitsListPage() {
                   ))}
                 </Select>
               </div> */}
-            </div>
+              </div>
 
-            <div>
-              <Label htmlFor="description" value="Description *" />
+              <div>
+                <Label htmlFor="description" value="Description *" />
 
-              <Textarea
-                {...register("description")}
-                id="description"
-                placeholder="Enter benefit description"
-                rows={3}
-                disabled={isSubmitting}
-                color={errors.description ? "failure" : "gray"}
-                helperText={errors.description?.message}
-              />
-            </div>
+                <Textarea
+                  {...register("description")}
+                  id="description"
+                  placeholder="Enter benefit description"
+                  rows={3}
+                  disabled={isSubmitting}
+                  color={errors.description ? "failure" : "gray"}
+                  helperText={errors.description?.message}
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="icon" value="Icon (optional)" />
+              {/* <div>
+                <Label htmlFor="icon" value="Icon (optional)" />
 
-              <TextInput
-                {...register("icon")}
-                id="icon"
-                type="text"
-                placeholder="Enter icon name or emoji"
-                disabled={isSubmitting}
-                color={errors.icon ? "failure" : "gray"}
-                helperText={errors.icon?.message}
-              />
-            </div>
+                <TextInput
+                  {...register("icon")}
+                  id="icon"
+                  type="text"
+                  placeholder="Enter icon name or emoji"
+                  disabled={isSubmitting}
+                  color={errors.icon ? "failure" : "gray"}
+                  helperText={errors.icon?.message}
+                />
+              </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                {...register("is_active")}
-                id="is_active"
-                type="checkbox"
-                checked={watch("is_active")}
-                disabled={isSubmitting}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  {...register("is_active")}
+                  id="is_active"
+                  type="checkbox"
+                  checked={watch("is_active")}
+                  disabled={isSubmitting}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
 
-              <Label htmlFor="is_active" value="Active" />
-            </div>
+                <Label htmlFor="is_active" value="Active" />
+              </div> */}
 
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                color="blue"
-                disabled={isSubmitting}
-                isProcessing={isSubmitting}
-              >
-                {editingBenefit ? "Update Benefit" : "Create Benefit"}
-              </Button>
-              <Button
-                type="button"
-                color="gray"
-                onClick={resetForm}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  color="gray"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  color="blue"
+                  disabled={isSubmitting}
+                  isProcessing={isSubmitting}
+                >
+                  {editingBenefit ? "Update Benefit" : "Create Benefit"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
       )}
 
       {/* Benefits List */}
@@ -481,9 +485,7 @@ function AdminBenefitsListPage() {
           : benefits.map((benefit) => (
               <Card
                 key={benefit.id}
-                className={`bg-white text-gray-900 shadow-md dark:bg-gray-800 dark:text-white relative group ${
-                  !benefit.is_active ? "opacity-60" : ""
-                }`}
+                className={`bg-white text-gray-900 shadow-md dark:bg-gray-800 dark:text-white relative group`}
               >
                 <div className="absolute top-2 right-2">
                   <Dropdown
@@ -510,7 +512,7 @@ function AdminBenefitsListPage() {
                       }
                       className="flex items-center gap-2"
                     >
-                      {benefit.is_active ? (
+                      {/* {benefit.is_active ? (
                         <>
                           <HiX className="h-4 w-4" />
                           Deactivate
@@ -520,7 +522,7 @@ function AdminBenefitsListPage() {
                           <HiCheck className="h-4 w-4" />
                           Activate
                         </>
-                      )}
+                      )} */}
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item
@@ -536,19 +538,11 @@ function AdminBenefitsListPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  {benefit.icon && (
-                    <div className="text-2xl">{benefit.icon}</div>
-                  )}
-                  <div className="flex-1">
+                  <div className="">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
                         {benefit.name}
                       </h3>
-                      {!benefit.is_active && (
-                        <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">
-                          Inactive
-                        </span>
-                      )}
                     </div>
 
                     {/* <span
@@ -562,8 +556,7 @@ function AdminBenefitsListPage() {
                     </p>
 
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Created:{" "}
-                      {formatDate(benefit.created_at)}
+                      Created: {formatDate(benefit.created_at)}
                     </div>
                   </div>
                 </div>
@@ -599,7 +592,7 @@ function AdminBenefitsListPage() {
           } else if (confirmAction?.action === "toggle") {
             handleToggleStatus(confirmAction.benefit);
           }
-          setConfirmAction(null);
+          
         }}
         loading={isActionLoading}
       />

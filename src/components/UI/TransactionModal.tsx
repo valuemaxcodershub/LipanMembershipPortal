@@ -131,7 +131,7 @@ const TransactionReceiptModal = ({
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">Recipient:</Table.Cell>
-                <Table.Cell>{user?.full_name}</Table.Cell>
+                <Table.Cell>{user?.first_name} {user?.last_name}</Table.Cell>
               </Table.Row>
               <Table.Row>
                 <Table.Cell className="font-semibold">

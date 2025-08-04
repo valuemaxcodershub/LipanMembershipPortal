@@ -15,7 +15,9 @@ function ProfileToggle() {
               ? `${import.meta.env.VITE_API_URL + user?.profile_pic}`
               : undefined
           }
-          placeholderInitials={getInitails(user?.full_name || "- -")}
+          placeholderInitials={getInitails(
+            `${user?.first_name || ""} ${user?.last_name || ""}`
+          )}
           color={"purple"}
           rounded
         />
@@ -25,7 +27,9 @@ function ProfileToggle() {
       className="!min-w-[200px]"
     >
       <Dropdown.Header>
-        <span className="block text-sm">{user?.full_name}</span>
+        <span className="block text-sm">
+          {user?.first_name || ""} {user?.last_name || ""}
+        </span>
         <span className="block truncate text-sm font-medium">
           {user?.email}
         </span>

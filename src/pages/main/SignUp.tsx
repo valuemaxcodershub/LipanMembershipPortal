@@ -75,15 +75,27 @@ function MultiSectionForm() {
               <option value="prof">Professor</option>
             </Select>
           </div>
-          <div className="my-6">
-            <Label value="Full Name" />
-            <TextInput
-              {...register("full_name")}
-              placeholder="Enter your fullname"
-              icon={FiUser}
-              color={errors.full_name ? "failure" : undefined}
-              helperText={errors.full_name?.message}
-            />
+          <div className="grid md:grid-cols-2 gap-4 my-6">
+            <div>
+              <Label value="First Name" />
+              <TextInput
+                {...register("first_name")}
+                placeholder="Enter your first name"
+                icon={FiUser}
+                color={errors.first_name ? "failure" : undefined}
+                helperText={errors.first_name?.message}
+              />
+            </div>
+            <div>
+              <Label value="Last Name" />
+              <TextInput
+                {...register("last_name")}
+                placeholder="Enter your last name"
+                icon={FiUser}
+                color={errors.last_name ? "failure" : undefined}
+                helperText={errors.last_name?.message}
+              />
+            </div>
           </div>
           <div className="my-6">
             <Label value="Gender" />
@@ -274,7 +286,7 @@ function MultiSectionForm() {
             >
               By checking this box, I,{" "}
               <span className="text-blue-500 underline font-bold">
-                {watch("full_name") || "your full name"}
+                {watch("first_name")} {watch("last_name")}
               </span>
               , confirm that I have read and agree to the{" "}
               <Tooltip content="Terms and Conditions" placement="top">
@@ -300,7 +312,7 @@ function MultiSectionForm() {
       navigate(`/registration-success`);
       reset();
     } catch (error: any) {
-      console.log(error); 
+      console.log(error);
       toast.error(error.message);
     } finally {
       setSectionLoading(false);

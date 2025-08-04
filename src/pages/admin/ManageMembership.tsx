@@ -33,6 +33,7 @@ const membershipSchema = yup.object({
     .number()
     .typeError("Price must be a number")
     .required("Price is required"),
+  benefits: yup.array().min(1, "At least one benefit is required"),
   permissions: yup.array().min(1, "At least one benefit is required"),
 });
 
@@ -66,11 +67,13 @@ export default function MembershipCreateEditPage() {
       name: "",
       description: "",
       price: 0,
+      benefits: [],
       permissions: [],
     },
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [benefits, setBenefits] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<any[]>([]);
 
   const isEditing = value && value !== "create";
@@ -85,11 +88,23 @@ export default function MembershipCreateEditPage() {
             name: data.name,
             description: data.description,
             price: data.price,
+            benefits: data.benefits.map((p: any) => p.key),
             permissions: data.permissions.map((p: any) => p.key),
           });
         }
-        const { data: permissionsList } = await axios.get(
-          "/membership/permission-list/"
+
+        const [permissionRes, benefitsRes] = await Promise.all([
+          axios.get("/membership/permission-list/"),
+          axios.get("/benefits/"),
+        ]);
+        const permissionsList = permissionRes.data;
+        const benefitslist = benefitsRes.data 
+
+        setBenefits(
+          benefitslist.map((item: any) => ({
+            id: item.id,
+            label: item.name,
+          }))
         );
         setPermissions(
           permissionsList.map((item: any) => ({
@@ -203,7 +218,29 @@ export default function MembershipCreateEditPage() {
           </div>
 
           <div className="space-y-2">
-            <Label value="Membership Benefits" />
+            <Label value="Membership benefits" />
+            <SelectableSection
+              options={benefits}
+              multiple
+              value={watch("benefits") as string[]}
+              onChange={(val) => setValue("benefits", val as string[])}
+              renderItem={(item, isSelected) => (
+                <div className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all">
+                  <Checkbox color="blue" checked={isSelected} readOnly />
+                  <span className="text-sm text-gray-800 dark:text-gray-100">
+                    {item.label}
+                  </span>
+                </div>
+              )}
+            />
+            {errors.benefits && (
+              <p className="text-sm text-red-500">
+                {errors.benefits.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label value="Membership permissions" />
             <SelectableSection
               options={permissions}
               multiple

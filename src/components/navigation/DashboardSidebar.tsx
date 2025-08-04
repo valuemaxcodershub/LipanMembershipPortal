@@ -58,7 +58,7 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
             >
               <Avatar
                 img={user?.profile_pic || undefined}
-                placeholderInitials={getInitails(user?.full_name || "")}
+                placeholderInitials={getInitails(`${user?.first_name || ""} ${user?.last_name || ""}`)}
                 color={"purple"}
                 size="lg"
                 rounded
