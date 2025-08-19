@@ -1,13 +1,10 @@
-import { Button, Card, Navbar, Footer, DarkThemeToggle } from "flowbite-react";
-import { FiArrowRight, FiLogIn, FiUsers } from "react-icons/fi";
+import { Button, Card } from "flowbite-react";
+import { FiArrowRight, FiUsers } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { Logo } from "../../components/UI/Logo";
 import { PageMeta } from "../../utils/app/pageMetaValues";
-import { useAuth } from "../../hooks/auth";
-import ProfileToggle from "../../components/UI/ProfileToggle";
 
 function WelcomePage() {
-  const { isAuthenticated } = useAuth();
   return (
     <>
       <PageMeta>
@@ -17,43 +14,7 @@ function WelcomePage() {
           content="Welcome to LIPAN, empowering Nigerians through literacy and development."
         />
       </PageMeta>
-      <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        {/* Header Section */}
-        <Navbar fluid className="sticky top-0 z-50 !bg-blue-700 lg:!px-24">
-          <Navbar.Brand as={"div"}>
-            <Logo className="h-9 lg:h-14" />
-          </Navbar.Brand>
-          <div className="flex md:order-2 ml-5">
-            <Navbar.Toggle className="text-white hover:bg-transparent" />
-            <DarkThemeToggle />
-          </div>
-          <Navbar.Collapse className="ms-auto">
-            {!isAuthenticated ? (
-              <>
-                <Button
-                  as={Link}
-                  to="/auth/sign-in"
-                  size="sm"
-                  color="blue"
-                  outline
-                >
-                  Login
-                </Button>
-                <Button
-                  as={Link}
-                  to="/auth/sign-up"
-                  size="sm"
-                  color="blue"
-                  outline
-                >
-                  Get Started
-                </Button>
-              </>
-            ) : (
-              <ProfileToggle />
-            )}
-          </Navbar.Collapse>
-        </Navbar>
+      
 
         {/* Hero Section */}
         <div className="flex flex-col items-center bg-gradient-to-r from-blue-300 via-white to-gray-100 dark:from-blue-900 dark:via-gray-800 dark:to-gray-900 px-4 py-16 text-center">
@@ -159,21 +120,8 @@ function WelcomePage() {
           <div className="mt-8 flex justify-center space-x-4"></div>
         </div>
 
-        {/* Footer */}
-        <Footer container>
-          <div className="w-full text-center">
-            <Footer.Divider />
-            <div className="w-full justify-between sm:flex sm:items-center sm:justify-between">
-              <Logo className="bg-blue-700 rounded-xl p-1" />
-              <Footer.Copyright
-                href="#"
-                by="LiPAN™"
-                year={new Date().getFullYear()}
-              />
-            </div>
-          </div>
-        </Footer>
-      </div>
+       
+      
     </>
   );
 }

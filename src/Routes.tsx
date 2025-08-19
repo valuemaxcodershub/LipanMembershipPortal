@@ -44,6 +44,8 @@ import AdminEventUsersPage from "./pages/admin/EventsUsers";
 import NotAccessPage from "./pages/members/NoAccess";
 import AdminBenefitsListPage from "./pages/admin/MembershipBenefits";
 import AdminProfileSettingsPage from "./pages/admin/Profile";
+import ConferenceRegister from "./pages/main/ConferenceRegister";
+import MainLayout from "./layouts/MainLayout";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -72,7 +74,11 @@ function AppRoutes() {
   }
   return (
     <Routes>
-      <Route path="/" element={<WelcomePage />} />
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<WelcomePage />} />
+      </Route>
+        <Route path="/conference/register" element={<ConferenceRegister />} />
+
       <Route path="/test-pay" element={<TestPayment />} />
 
       <Route path="/auth" element={<AuthLayout />}>
@@ -88,6 +94,7 @@ function AppRoutes() {
         path="/registration-success"
         element={<RegistrationSuccessPage />}
       />
+
       <Route path="/getting-started" element={<PricingPage />} />
 
       <Route

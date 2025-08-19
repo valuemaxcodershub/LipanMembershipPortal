@@ -7,10 +7,10 @@ type SelectableItem = {
 };
 
 interface SelectableSectionProps {
-  options: SelectableItem[];
+  options: SelectableItem[] | string[];
   multiple?: boolean;
   value: string[] | string | boolean| null;
-  renderItem?: (item: SelectableItem, isSelected: boolean) => React.ReactNode;
+  renderItem?: (item: SelectableItem | string, isSelected: boolean) => React.ReactNode;
   onChange: (val: string[] | string | boolean | null) => void;
   allowBooleanToggle?: boolean;
 };
@@ -48,25 +48,31 @@ const SelectableSection = ({
 
   return (
     <div className="flex items-center flex-wrap gap-4">
-      {options.map((option, idx) => (
-        <div onClick={() => handleClick(option.id)} key={idx}>
-          {renderItem ? (
-            renderItem(option, isSelected(option.id))
-          ) : (
-            <button
-              type="button"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                isSelected(option.id)
-                  ? "bg-blue-600 text-white border-blue-600 shadow"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200"
-              }`}
-            >
-              {option.icon && <span className="text-xl">{option.icon}</span>}
-              <span>{option.label}</span>
-            </button>
-          )}
-        </div>
-      ))}
+      {options.map((option, idx) => {
+        const isObject = typeof option === "object"
+        const identifier = isObject ? option?.id : option
+        const label = isObject ? option?.label : option
+        const hasIcon = (option as SelectableItem).icon;
+        return (
+          <div onClick={() => handleClick(identifier)} key={idx}>
+            {renderItem ? (
+              renderItem(option, isSelected(identifier))
+            ) : (
+              <button
+                type="button"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                  isSelected(identifier)
+                    ? "bg-blue-600 text-white border-blue-600 shadow"
+                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200"
+                }`}
+              >
+                {hasIcon && <span className="text-xl">{hasIcon}</span>}
+                <span>{label}</span>
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
