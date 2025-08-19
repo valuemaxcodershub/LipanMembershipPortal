@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Spinner, Button } from "flowbite-react";
 import axios from "axios";
-import { FaCheckCircle, FaShieldAlt } from "react-icons/fa";
+import { FaCheckCircle, FaRedo, FaShieldAlt } from "react-icons/fa";
 
 export default function PaymentProcessingModal({
   isOpen,
@@ -17,7 +17,7 @@ export default function PaymentProcessingModal({
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [failed, setFailed] = useState(false);
 
-  const sendTransaction = async (data) => {
+  const sendTransaction = async (data: any) => {
     try {
       // 🚨 Replace with your API route
       await axios.post(
@@ -91,10 +91,11 @@ export default function PaymentProcessingModal({
               </p>
               <Button
                 onClick={retry}
-                color="blue"
+                color="failure"
+                outline
                 className="!mx-auto !w-full mt-3"
               >
-                Retry
+                Retry <FaRedo className="h-5 ml-3" />
               </Button>
             </>
           ) : (

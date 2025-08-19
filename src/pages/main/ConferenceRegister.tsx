@@ -101,7 +101,7 @@ export default function RegistrationPage() {
   const participationMode = watch("participation");
 
   const [showModal, setShowModal] = useState(false);
-  const [countries, setCountries] = useState<Country[]>(countryData);
+  const [countries, setCountries] = useState<Country[]>(countryData as anu);
 
   const getCountries = async () => {
     try {
