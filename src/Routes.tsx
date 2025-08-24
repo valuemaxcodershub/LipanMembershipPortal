@@ -46,6 +46,7 @@ import AdminBenefitsListPage from "./pages/admin/MembershipBenefits";
 import AdminProfileSettingsPage from "./pages/admin/Profile";
 import ConferenceRegister from "./pages/main/ConferenceRegister";
 import MainLayout from "./layouts/MainLayout";
+import RegistrationSuccess from "./pages/main/ConferenceRegistrationSuccess";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -77,7 +78,8 @@ function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<WelcomePage />} />
       </Route>
-        <Route path="/conference/register" element={<ConferenceRegister />} />
+      <Route path="/conference/register" element={<ConferenceRegister />} />
+      <Route path="/conference/register/success" element={<RegistrationSuccess />} />
 
       <Route path="/test-pay" element={<TestPayment />} />
 
