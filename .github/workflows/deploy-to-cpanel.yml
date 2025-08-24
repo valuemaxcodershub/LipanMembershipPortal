@@ -18,6 +18,12 @@ jobs:
           node-version: 22
           cache: "npm"
 
+      - name: Create .env.production
+        run: |
+          echo "${{ secrets.APP_ENV }}" >> .env.production
+          type .env.production
+
+
       - name: Install dependencies & build
         run: |
           npm install
