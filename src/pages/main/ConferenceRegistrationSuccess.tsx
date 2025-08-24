@@ -2,9 +2,13 @@ import { FaCheckCircle } from "react-icons/fa";
 import { Button } from "flowbite-react";
 import { useEffect, useState } from "react";
 import Confetti from "react-confetti";
+import { useSearchParams } from "react-router-dom";
 
 export default function RegistrationSuccess() {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [searchParams] = useSearchParams();
+  const callbackUrl =
+    searchParams.get("callbackUrl") || "https://lipanonline.org/conferences";
 
   useEffect(() => {
     // update size for responsive confetti
@@ -54,7 +58,7 @@ export default function RegistrationSuccess() {
 
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row justify-center gap-3">
-          <Button href="/conference/register" gradientDuoTone="purpleToBlue">
+          <Button href={callbackUrl} gradientDuoTone="purpleToBlue">
             Go Back
           </Button>
         </div>

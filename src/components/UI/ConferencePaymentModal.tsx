@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Spinner, Button } from "flowbite-react";
 import axios from "axios";
 import { FaCheckCircle, FaRedo, FaShieldAlt } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function PaymentProcessingModal({
   isOpen,
@@ -16,6 +16,7 @@ export default function PaymentProcessingModal({
   transactionData: any;
   }) {
   const navigate = useNavigate()
+  const {pathname} = useLocation()
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -35,7 +36,7 @@ export default function PaymentProcessingModal({
       // auto-close modal after success
       setTimeout(() => {
         onClose();
-        navigate("/conference/register/success");
+        navigate(`/conference/register/success?callbackUrl=${pathname}`);
       }, 2000);
     } catch (err) {
       console.error("Error submitting payment:", err);

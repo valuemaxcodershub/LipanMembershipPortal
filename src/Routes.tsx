@@ -47,6 +47,8 @@ import AdminProfileSettingsPage from "./pages/admin/Profile";
 import ConferenceRegister from "./pages/main/ConferenceRegister";
 import MainLayout from "./layouts/MainLayout";
 import RegistrationSuccess from "./pages/main/ConferenceRegistrationSuccess";
+import TeacherRegistrationPage from "./pages/main/TeacherConferenceRegister";
+import ConferenceLayout from "./layouts/ConferenceLayout";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -78,8 +80,14 @@ function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<WelcomePage />} />
       </Route>
-      <Route path="/conference/register" element={<ConferenceRegister />} />
-      <Route path="/conference/register/success" element={<RegistrationSuccess />} />
+      <Route path="/conference" element={<ConferenceLayout />}>
+        <Route path="register" element={<ConferenceRegister />} />
+        <Route path="teacher-register" element={<TeacherRegistrationPage />} />
+      </Route>
+      <Route
+        path="/conference/register/success"
+        element={<RegistrationSuccess />}
+      />
 
       <Route path="/test-pay" element={<TestPayment />} />
 

@@ -19,6 +19,7 @@ import * as yup from "yup";
 import SelectableSection from "../../components/UI/SelectionCard";
 import { usePaystackPayment } from "react-paystack";
 import PaymentProcessingModal from "../../components/UI/ConferencePaymentModal";
+import NavigationBar from "../../components/UI/MainSiteNav";
 import ReactSelect, { components as ReactSelectComponents } from "react-select";
 import { Country } from "../../types/_all";
 import axios from "axios";
@@ -40,7 +41,7 @@ const schema = yup.object({
   participationCategory: yup
     .string()
     .required("Participation category is required"),
-  registrationFee: yup.string().required("Please select a registration fee"),
+  registrationFee: yup.string(),
   paperTitle: yup.string().nullable(),
   thematicArea: yup.string().nullable(),
   coAuthors: yup.string().nullable(),
@@ -65,32 +66,7 @@ const presentationTypes = [
   "Exhibitions",
 ];
 
-function checkCode(
-  value: string
-): Promise<{ valid: boolean; message: string }> {
-  return new Promise((resolve) => {
-    // Simulate API delay
-    setTimeout(() => {
-      const pattern = /^Li\d{4}PAN$/;
-
-      if (pattern.test(value)) {
-        resolve({
-          valid: true,
-          message: "✅ Membership ID is valid and recognized.",
-        });
-      } else {
-        resolve({
-          valid: false,
-          message: "❌ Invalid ID Provided.",
-        });
-      }
-    }, 1500); // simulate 1.5s API delay
-  });
-}
-
-
-
-export default function RegistrationPage() {
+export default function TeacherRegistrationPage() {
   const {
     register,
     watch,
@@ -107,31 +83,30 @@ export default function RegistrationPage() {
       country: "Nigeria",
       paymentTrxId: "",
       paymentTrxRef: "",
+      registrationFee: "Teacher - ₦100,000",
     },
   });
 
   const formRef = useRef<HTMLFormElement | null>(null);
-  const selectedFee = watch("registrationFee");
   const formValues = watch();
 
   const selectedCountry = watch("country");
   const selectedCity = watch("city");
   const selectedCategory = watch("participationCategory");
-  const participationMode = watch("participation");
 
   const [showModal, setShowModal] = useState(false);
   const [countries, setCountries] = useState<Country[]>(countryData as any);
-  const [code, setCode] = useState("");
-  const [isCheckingCode, setIsCheckingCode] = useState(false);
+  // const [code, setCode] = useState("");
+  // const [isCheckingCode, setIsCheckingCode] = useState(false);
 
-  const [result, setResult] = useState<any>(null);
+  // const [result, setResult] = useState<any>(null);
 
-  const handleCheck = async () => {
-    setIsCheckingCode(true);
-    const res = await checkCode(code);
-    setResult(res);
-    setIsCheckingCode(false);
-  };
+  // const handleCheck = async () => {
+  //   setIsCheckingCode(true);
+  //   const res = await checkCode(code);
+  //   setResult(res);
+  //   setIsCheckingCode(false);
+  // };
 
   // const getCountries = async () => {
   //   try {
@@ -149,44 +124,11 @@ export default function RegistrationPage() {
   //   getCountries();
   // }, []);
 
-  const getFeeOptions = () => {
-    if (!selectedCountry || !selectedCategory || !selectedCity) return [];
-
-    const countryData = countries.find((c) => c.name === selectedCountry);
-    const isNigeria = selectedCountry === "Nigeria";
-    const isAfrica = countryData?.region === "Africa" && !isNigeria;
-
-    if (isNigeria) {
-      return [
-        { value: "Student – ₦20,000", label: "Student" },
-        { value: "Member – ₦30,000", label: "Member" },
-        { value: "Non-Member – ₦40,000", label: "Non-Member" },
-      ];
-    } else if (isAfrica) {
-      return [
-        { value: "Student – $20", label: "Student" },
-        { value: "Regular – $100", label: "Regular" },
-      ];
-    } else {
-      return [
-        { value: "Student – $20", label: "Student" },
-        { value: "Regular – $150", label: "Regular" },
-      ];
-    }
-  };
-
-  let amount = 0;
+  
+  let amount = 100_000;
   let currency: "NGN" | "USD" = "NGN";
 
-  if (selectedFee) {
-    if (selectedFee.includes("₦")) {
-      currency = "NGN";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
-    } else if (selectedFee.includes("$")) {
-      currency = "USD";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
-    }
-  }
+
 
   // Paystack config
   const paystackConfig = {
@@ -211,9 +153,8 @@ export default function RegistrationPage() {
   const initializePayment = usePaystackPayment(paystackConfig);
 
   const startPayment = async () => {
-    const isFormValid = await trigger(undefined, {shouldFocus: true});
+    const isFormValid = await trigger(undefined, { shouldFocus: true });
     if (!isFormValid) return;
-    if (result && !result.valid) return;
     initializePayment({ onSuccess, onClose });
   };
 
@@ -252,7 +193,9 @@ export default function RegistrationPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      
+      <div className="fixed flex justify-center top-5 w-full z-50 xl:px-32">
+        <NavigationBar />
+      </div>
       <header
         className="w-full text-white py-20 pt-36 text-center shadow-md"
         style={{
@@ -261,7 +204,7 @@ export default function RegistrationPage() {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <h1 className="text-4xl font-extrabold">Conference Registration</h1>
+        <h1 className="text-4xl font-extrabold">Teacher Conference Registration</h1>
         <p className="mt-3 text-lg font-medium">
           Pan African Literacy for All Conference 2025 – Join us in shaping
           Africa’s future
@@ -281,7 +224,7 @@ export default function RegistrationPage() {
           {/* Form Section */}
           <Card className="col-span-3 p-8 shadow-xl m-auto w-full max-w-4xl">
             <h2 className="text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
-              Registration Form
+              Teacher Registration Form
             </h2>
 
             <form ref={formRef} className="space-y-12">
@@ -543,7 +486,6 @@ export default function RegistrationPage() {
                         isSearchable
                         classNamePrefix="react-select"
                         className="text-sm"
-                        isDisabled={!!selectedFee}
                         styles={{
                           control: (base) => ({
                             ...base,
@@ -584,7 +526,6 @@ export default function RegistrationPage() {
                     placeholder="City of residence"
                     {...register("city")}
                     color={errors.city ? "failure" : undefined}
-                    disabled={!!selectedFee}
                   />
                   {errors.city && (
                     <p className="text-red-500 text-sm">
@@ -596,122 +537,45 @@ export default function RegistrationPage() {
 
               {/* Registration Fees */}
               {selectedCountry && selectedCategory && selectedCity && (
-                <div>
-                  <Label value="Registration Type" />
-                  <Select
-                    disabled={!!selectedFee}
-                    color={errors.registrationFee ? "failure" : undefined}
-                    {...register("registrationFee")}
-                  >
-                    <option value="">Select category</option>
-                    {getFeeOptions().map((fee) => (
-                      <option value={fee.value}>{fee.label}</option>
-                    ))}
-                  </Select>
-                  {errors.registrationFee && (
-                    <p className="text-red-500 text-sm">
-                      {errors.registrationFee.message}
-                    </p>
-                  )}
+                <div className="flex justify-center mt-8">
+                  <Card className="w-full shadow-lg border rounded-2xl p-6">
+                    {/* Header */}
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                      Registration Checkout
+                    </h2>
 
-                  {/* {selectedFee === "Member – ₦30,000" &&
-                    selectedCountry === "Nigeria" && (
-                      <div className="mt-10">
-                        <Label value="Enter your Membership Id" />
-                        <div className="w-full mx-auto rounded-xl border p-2">
-                          <div className="flex gap-5">
-                            <TextInput
-                              id="codeInput"
-                              type="text"
-                              value={code}
-                              placeholder="Enter ID here..."
-                              onChange={(e) => setCode(e.target.value)}
-                              required
-                              disabled={isCheckingCode || result?.valid}
-                              className="rounded-r-none w-full"
-                              color={
-                                result && !result.valid ? "failure" : undefined
-                              }
-                            />
-                            <Button
-                              onClick={handleCheck}
-                              color="blue"
-                              disabled={isCheckingCode || result?.valid}
-                              isProcessing={isCheckingCode}
-                              className=""
-                            >
-                              Validate
-                            </Button>
-                          </div>
-                        </div>
-                        {result && (
-                          <p
-                            className={`${result.valid ? "text-lime-500" : "text-red-500"} text-sm`}
-                          >
-                            {result?.message}
-                          </p>
-                        )}
+                    <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
+                      {/* Fee Row */}
+                      <div className="flex items-center gap-5 justify-start border-b pb-4 w-3/4">
+                        <span className="text-gray-600 text-lg">
+                          Conference Registration Fee:
+                        </span>
+                        <span className="text-blue-600 font-extrabold text-xl">
+                          NGN 100,000
+                        </span>
                       </div>
-                    )} */}
 
-                  {selectedFee && (
-                    <div className="flex justify-center mt-8">
-                      <Card className="w-full shadow-lg border rounded-2xl p-6">
-                        {selectedFee === "Student – ₦20,000" && (
-                          <p className="p-5 rounded-xl border-l-4 border-blue-600 shadow">
-                            <span className="text-lg font-bold">Note:</span> You
-                            will be required to provide your student ID on
-                            conference entry
-                          </p>
-                        )}
-                        {/* Header */}
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                          Registration Checkout
-                        </h2>
-
-                        <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
-                          {/* Fee Row */}
-                          <div className="flex items-center gap-5 justify-start border-b pb-4 w-3/4">
-                            <span className="text-gray-600 text-lg">
-                              Conference Registration Fee:
-                            </span>
-                            <span className="text-blue-600 font-extrabold text-xl">
-                              {currency} {amount}
-                            </span>
-                          </div>
-
-                          {/* Pay Button */}
-                          <Button
-                            onClick={startPayment}
-                            gradientDuoTone="purpleToBlue"
-                            size="md"
-                            type="button"
-                            className="w-1/4 flex items-center justify-center gap-2"
-                          >
-                            <HiOutlineCreditCard className="text-lg h-5 mr-2" />
-                            Pay Now
-                          </Button>
-                        </div>
-
-                        {/* Additional Info */}
-
-                        <p className="text-gray-500 text-sm">
-                          Please confirm your payment details before proceeding.
-                        </p>
-                      </Card>
+                      {/* Pay Button */}
+                      <Button
+                        onClick={startPayment}
+                        gradientDuoTone="purpleToBlue"
+                        size="md"
+                        type="button"
+                        className="w-1/4 flex items-center justify-center gap-2"
+                      >
+                        <HiOutlineCreditCard className="text-lg h-5 mr-2" />
+                        Pay Now
+                      </Button>
                     </div>
-                  )}
+
+                    {/* Additional Info */}
+
+                    <p className="text-gray-500 text-sm">
+                      Please confirm your payment details before proceeding.
+                    </p>
+                  </Card>
                 </div>
               )}
-
-              {/* Submit */}
-              {/* <Button
-                type="button"
-                onClick={startPayment}
-                className="w-full mt-6 text-white !bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600"
-              >
-                Proceed
-              </Button> */}
             </form>
           </Card>
         </div>
