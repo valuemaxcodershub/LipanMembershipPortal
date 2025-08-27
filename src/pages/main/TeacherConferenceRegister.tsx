@@ -121,7 +121,7 @@ export default function TeacherRegistrationPage() {
   // }, []);
 
   
-  let amount = 100_000;
+  let amount = 120_000;
   let currency: "NGN" | "USD" = "NGN";
 
 
