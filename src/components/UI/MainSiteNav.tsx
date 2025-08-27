@@ -11,7 +11,7 @@ const NavigationBar = () => {
     >
       {/* Logo + Title */}
       <Navbar.Brand href="/">
-        <Logo src="/logo-light.png" className="h-9 lg:h-14" />
+        <img src="/logo-light.png" className="h-9 lg:h-14" />
       </Navbar.Brand>
 
       {/* Toggle for Mobile */}

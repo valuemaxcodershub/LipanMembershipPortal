@@ -45,6 +45,7 @@ type User = {
   full_name: string;
   email: string;
   membership_type: string;
+lipan_id: string;
   is_staff: boolean;
   is_active: boolean;
   profile_pic: string | null;
@@ -331,6 +332,7 @@ const UserManagementPage = () => {
             <Table.HeadCell>S/N</Table.HeadCell>
             <Table.HeadCell>Name</Table.HeadCell>
             <Table.HeadCell>Email</Table.HeadCell>
+            <Table.HeadCell>Member-Id</Table.HeadCell>
             <Table.HeadCell>Type</Table.HeadCell>
             {user_type === "users" && (
               <Table.HeadCell>Membership</Table.HeadCell>
@@ -342,7 +344,7 @@ const UserManagementPage = () => {
             {loading ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={7}
+                  colSpan={8}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 py-6"
                 >
                   <div className="flex justify-center">
@@ -354,7 +356,7 @@ const UserManagementPage = () => {
             ) : error ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={7}
+                  colSpan={8}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 text-red-500 py-6"
                 >
                   {error}
@@ -363,7 +365,7 @@ const UserManagementPage = () => {
             ) : users.length === 0 ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={7}
+                  colSpan={8}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 text-gray-500 py-6"
                 >
                   No {user_type} found.
@@ -399,6 +401,7 @@ const UserManagementPage = () => {
                     <p className="truncate max-w-[200px]">{user.full_name}</p>
                   </Table.Cell>
                   <Table.Cell>{user.email}</Table.Cell>
+                  <Table.Cell >{user.lipan_id}</Table.Cell>
                   <Table.Cell>
                     <Badge
                       className="w-fit mx-auto"
@@ -620,10 +623,10 @@ const UserManagementPage = () => {
                       <div
                         className={`text-4xl ${isSelected ? "text-blue-600" : "text-gray-500"} m-auto w-fit`}
                       >
-                        {item.icon}
+                        {item.icon as any}
                       </div>
                       <p className="text-xs font-semibold text-center dark:text-gray-200">
-                        {item.label}
+                        {item.label as any}
                       </p>
                     </div>
                   )}

@@ -21,8 +21,9 @@ import { usePaystackPayment } from "react-paystack";
 import PaymentProcessingModal from "../../components/UI/ConferencePaymentModal";
 import ReactSelect, { components as ReactSelectComponents } from "react-select";
 import { Country } from "../../types/_all";
-import axios from "axios";
 import countryData from "../../data.json";
+import axios from "../../config/axios";
+import { toast } from "react-toastify";
 
 // ----------------------
 // Validation Schema (Yup)
@@ -65,30 +66,38 @@ const presentationTypes = [
   "Exhibitions",
 ];
 
-function checkCode(
-  value: string
-): Promise<{ valid: boolean; message: string }> {
-  return new Promise((resolve) => {
-    // Simulate API delay
-    setTimeout(() => {
-      const pattern = /^Li\d{4}PAN$/;
+async function checkCode(
+  id: string,
+  email: string
+): Promise<{ valid: boolean; message: string } | undefined> {
+  if (!email) {
+    toast.error("Please enter your email first.");
+    return;
+  }
+  const pattern = /^Li\d{4}PAN$/;
+  if (!pattern.test(id)) {
+    return {
+      valid: false,
+      message: "❌ Invalid ID Provided.",
+    };
+  }
 
-      if (pattern.test(value)) {
-        resolve({
-          valid: true,
-          message: "✅ Membership ID is valid and recognized.",
-        });
-      } else {
-        resolve({
-          valid: false,
-          message: "❌ Invalid ID Provided.",
-        });
-      }
-    }, 1500); // simulate 1.5s API delay
-  });
+  // Simulate API call to validate the code
+  try {
+    await axios.post("/accounts/user/verify-id/", { lipan_id: id, email });
+    return {
+      valid: true,
+      message: "✅ Membership ID is valid and recognized.",
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      valid: false,
+      message: "❌ Error validating ID. Please try again later.",
+    };
+  }
+
 }
-
-
 
 export default function RegistrationPage() {
   const {
@@ -128,7 +137,7 @@ export default function RegistrationPage() {
 
   const handleCheck = async () => {
     setIsCheckingCode(true);
-    const res = await checkCode(code);
+    const res = await checkCode(code, watch("email"));
     setResult(res);
     setIsCheckingCode(false);
   };
@@ -211,7 +220,7 @@ export default function RegistrationPage() {
   const initializePayment = usePaystackPayment(paystackConfig);
 
   const startPayment = async () => {
-    const isFormValid = await trigger(undefined, {shouldFocus: true});
+    const isFormValid = await trigger(undefined, { shouldFocus: true });
     if (!isFormValid) return;
     if (result && !result.valid) return;
     initializePayment({ onSuccess, onClose });
@@ -252,7 +261,7 @@ export default function RegistrationPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      
+
       <header
         className="w-full text-white py-20 pt-36 text-center shadow-md"
         style={{
@@ -614,7 +623,7 @@ export default function RegistrationPage() {
                     </p>
                   )}
 
-                  {/* {selectedFee === "Member – ₦30,000" &&
+                  {selectedFee === "Member – ₦30,000" &&
                     selectedCountry === "Nigeria" && (
                       <div className="mt-10">
                         <Label value="Enter your Membership Id" />
@@ -652,7 +661,7 @@ export default function RegistrationPage() {
                           </p>
                         )}
                       </div>
-                    )} */}
+                    )}
 
                   {selectedFee && (
                     <div className="flex justify-center mt-8">
