@@ -680,7 +680,7 @@ export default function RegistrationPage() {
 
                         <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
                           {/* Fee Row */}
-                          <div className="flex items-center gap-5 justify-start border-b pb-4 w-3/4">
+                          <div className="flex flex-col md:flex-row items-center gap-5 justify-start border-b pb-4 w-3/4">
                             <span className="text-gray-600 text-lg">
                               Conference Registration Fee:
                             </span>
