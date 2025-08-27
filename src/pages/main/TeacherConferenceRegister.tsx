@@ -83,7 +83,7 @@ export default function TeacherRegistrationPage() {
       country: "Nigeria",
       paymentTrxId: "",
       paymentTrxRef: "",
-      registrationFee: "Teacher - ₦100,000",
+      registrationFee: "Teacher - ₦120,000",
     },
   });
 
@@ -551,7 +551,7 @@ export default function TeacherRegistrationPage() {
                           Conference Registration Fee:
                         </span>
                         <span className="text-blue-600 font-extrabold text-xl">
-                          NGN 100,000
+                          NGN 120,000
                         </span>
                       </div>
 
