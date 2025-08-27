@@ -35,17 +35,12 @@ const schema = yup.object({
   organization: yup.string().required("Organization/Institution is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   phone: yup.string().required("Phone/WhatsApp is required"),
-  city: yup.string().required("City of residence is required"),
-  country: yup.string().required("Country is required"),
-  participation: yup.string().required("Participation mode is required"),
-  participationCategory: yup
-    .string()
-    .required("Participation category is required"),
+  // participation: yup.string().required("Participation mode is required"),
+  // participationCategory: yup
+  //   .string()
+  //   .required("Participation category is required"),
   registrationFee: yup.string(),
-  paperTitle: yup.string().nullable(),
-  thematicArea: yup.string().nullable(),
-  coAuthors: yup.string().nullable(),
-  presentationTypes: yup.array().default([]),
+
   // proposedTransport: yup.string().required("This field is required"),
   // reserveHotel: yup.string().required("This field is required"),
   // makeSiteVisits: yup.string().required("This field is required"),
@@ -80,7 +75,7 @@ export default function TeacherRegistrationPage() {
     mode: "onChange",
     defaultValues: {
       // dateOfArrival: new Date().toISOString(),
-      country: "Nigeria",
+      // country: "Nigeria",
       paymentTrxId: "",
       paymentTrxRef: "",
       registrationFee: "Teacher - ₦120,000",
@@ -90,9 +85,10 @@ export default function TeacherRegistrationPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const formValues = watch();
 
-  const selectedCountry = watch("country");
-  const selectedCity = watch("city");
-  const selectedCategory = watch("participationCategory");
+  // const selectedCountry = watch("country");
+  // const selectedCity = watch("city");
+  // const selectedCategory = watch("participationCategory");
+  
 
   const [showModal, setShowModal] = useState(false);
   const [countries, setCountries] = useState<Country[]>(countryData as any);
@@ -334,7 +330,7 @@ export default function TeacherRegistrationPage() {
               </div>
 
               {/* Participation Mode */}
-              <div>
+              {/* <div>
                 <Label value="Preferred Mode of Participation" />
                 <div className="flex gap-6 mt-2">
                   <div className="grid grid-cols-2 place-items-center">
@@ -361,182 +357,10 @@ export default function TeacherRegistrationPage() {
                     {errors.participation.message}
                   </p>
                 )}
-              </div>
-
-              <div>
-                <Label value="Select Your Participation Category" />
-                <div className="mt-2">
-                  <Select
-                    color={errors.participationCategory ? "failure" : undefined}
-                    {...register("participationCategory")}
-                  >
-                    <option value="">Select category</option>
-                    <option value="presenting">Presenting</option>
-                    <option value="not-presenting">Not-Presenting</option>
-                  </Select>
-                  {errors.participationCategory && (
-                    <p className="text-red-500 text-sm">
-                      {errors.participationCategory.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Paper Title */}
-              {selectedCategory === "presenting" && (
-                <>
-                  <div>
-                    <Label
-                      htmlFor="paperTitle"
-                      value="Title of Paper/Presentation (optional)"
-                    />
-                    <TextInput
-                      id="paperTitle"
-                      placeholder="Enter title"
-                      icon={FiFileText}
-                      {...register("paperTitle")}
-                      color={errors.paperTitle ? "failure" : undefined}
-                    />
-                    {errors.paperTitle && (
-                      <p className="text-red-500 text-sm">
-                        {errors.paperTitle.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label value="Thematic Area (optional)" />
-                      <Textarea
-                        placeholder="Write here..."
-                        {...register("thematicArea")}
-                        required
-                        rows={4}
-                        color={errors.thematicArea ? "failure" : undefined}
-                      />
-                      {errors.thematicArea && (
-                        <p className="text-red-500 text-sm">
-                          {errors.thematicArea.message}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label value="Co-authors (if-any)" />
-                      <Textarea
-                        placeholder="Write here..."
-                        {...register("coAuthors")}
-                        required
-                        rows={4}
-                        color={errors.coAuthors ? "failure" : undefined}
-                      />
-                      {errors.coAuthors && (
-                        <p className="text-red-500 text-sm">
-                          {errors.coAuthors.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label value="Types of presentation" />
-                    <SelectableSection
-                      options={presentationTypes}
-                      multiple
-                      value={watch("presentationTypes") as string[]}
-                      onChange={(val) =>
-                        setValue("presentationTypes", val as string[])
-                      }
-                      renderItem={(item, isSelected) => (
-                        <div className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                          <Checkbox
-                            color="blue"
-                            checked={isSelected}
-                            readOnly
-                          />
-                          <span className="text-sm text-gray-800 dark:text-gray-100">
-                            {item as string}
-                          </span>
-                        </div>
-                      )}
-                    />
-                    {errors.presentationTypes && (
-                      <p className="text-red-500 text-sm">
-                        {errors.presentationTypes.message}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Location */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="country" value="Country" />
-                  <Controller
-                    name="country"
-                    control={control}
-                    render={({ field }) => (
-                      <ReactSelect
-                        {...field}
-                        options={countryOptions}
-                        components={{
-                          Option: CustomOption,
-                          SingleValue: CustomSingleValue,
-                        }}
-                        placeholder="Select country"
-                        isSearchable
-                        classNamePrefix="react-select"
-                        className="text-sm"
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            borderColor: errors.country
-                              ? "#ff0000"
-                              : base.borderColor,
-                            boxShadow: errors.country
-                              ? "0 0 0 1px #ff0000"
-                              : base.boxShadow,
-                            "&:hover": {
-                              borderColor: errors.country
-                                ? "#ff0000"
-                                : base.borderColor,
-                            },
-                          }),
-                        }}
-                        onChange={(selected) =>
-                          field.onChange(selected ? selected.value : "")
-                        }
-                        value={
-                          countryOptions.find(
-                            (option) => option.value === field.value
-                          ) || null
-                        }
-                      />
-                    )}
-                  />
-                  {errors.country && (
-                    <p className="text-red-500 text-sm">
-                      {errors.country.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="city" value="City" />
-                  <TextInput
-                    id="city"
-                    placeholder="City of residence"
-                    {...register("city")}
-                    color={errors.city ? "failure" : undefined}
-                  />
-                  {errors.city && (
-                    <p className="text-red-500 text-sm">
-                      {errors.city.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+              </div> */}
 
               {/* Registration Fees */}
-              {selectedCountry && selectedCategory && selectedCity && (
+              {/* {selectedCountry && selectedCategory && selectedCity && ( */}
                 <div className="flex justify-center mt-8">
                   <Card className="w-full shadow-lg border rounded-2xl p-6">
                     {/* Header */}
@@ -575,7 +399,7 @@ export default function TeacherRegistrationPage() {
                     </p>
                   </Card>
                 </div>
-              )}
+              {/* )} */}
             </form>
           </Card>
         </div>
