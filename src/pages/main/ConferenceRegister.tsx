@@ -263,15 +263,15 @@ export default function RegistrationPage() {
       {/* Hero Section */}
 
       <header
-        className="w-full text-white py-20 pt-36 text-center shadow-md"
+        className="w-full text-white px-2 lg:px-0 py-20 pt-36 text-center shadow-md"
         style={{
           backgroundImage: "url(/bg-grad.jpg)",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
       >
-        <h1 className="text-4xl font-extrabold">Conference Registration</h1>
-        <p className="mt-3 text-lg font-medium">
+        <h1 className="text-2xl lg:text-4xl font-extrabold">Conference Registration</h1>
+        <p className="mt-3 text-md lg:text-lg font-medium">
           Pan African Literacy for All Conference 2025 – Join us in shaping
           Africa’s future
         </p>
@@ -288,8 +288,8 @@ export default function RegistrationPage() {
             />
           </div> */}
           {/* Form Section */}
-          <Card className="col-span-3 p-8 shadow-xl m-auto w-full max-w-4xl">
-            <h2 className="text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
+          <Card className="col-span-3 p-0 lg:p-8 shadow-xl m-auto w-full max-w-4xl">
+            <h2 className="text-2xl lg:text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
               Registration Form
             </h2>
 
@@ -628,7 +628,7 @@ export default function RegistrationPage() {
                       <div className="mt-10">
                         <Label value="Enter your Membership Id" />
                         <div className="w-full mx-auto rounded-xl border p-2">
-                          <div className="flex gap-5">
+                          <div className="flex flex-col md:flex-row gap-3 lg:gap-5">
                             <TextInput
                               id="codeInput"
                               type="text"
@@ -665,10 +665,10 @@ export default function RegistrationPage() {
 
                   {selectedFee && (
                     <div className="flex justify-center mt-8">
-                      <Card className="w-full shadow-lg border rounded-2xl p-6">
+                      <Card className="w-full shadow-lg border rounded-2xl lg:p-6">
                         {selectedFee === "Student – ₦20,000" && (
-                          <p className="p-5 rounded-xl border-l-4 border-blue-600 shadow">
-                            <span className="text-lg font-bold">Note:</span> You
+                          <p className="p-2 lg:p-5 rounded-xl border-l-4 border-blue-600 text-sm lg:text-md shadow">
+                            <span className="text-md lg:text-lg font-bold">Note:</span> You
                             will be required to provide your student ID on
                             conference entry
                           </p>
@@ -680,11 +680,11 @@ export default function RegistrationPage() {
 
                         <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
                           {/* Fee Row */}
-                          <div className="flex flex-col md:flex-row items-center gap-5 justify-start border-b pb-4 w-3/4">
-                            <span className="text-gray-600 text-lg">
+                          <div className="flex flex-col md:flex-row md:items-center gap-5 justify-start border-b pb-4 w-full lg:w-3/4">
+                            <span className="text-gray-600 text-sm md:text-lg">
                               Conference Registration Fee:
                             </span>
-                            <span className="text-blue-600 font-extrabold text-xl">
+                            <span className="text-blue-600 font-extrabold text-lg md:text-xl">
                               {currency} {amount}
                             </span>
                           </div>
@@ -695,7 +695,7 @@ export default function RegistrationPage() {
                             gradientDuoTone="purpleToBlue"
                             size="md"
                             type="button"
-                            className="w-1/4 flex items-center justify-center gap-2"
+                            className="w-full lg:w-1/4 flex items-center justify-center gap-2"
                           >
                             <HiOutlineCreditCard className="text-lg h-5 mr-2" />
                             Pay Now
@@ -704,7 +704,7 @@ export default function RegistrationPage() {
 
                         {/* Additional Info */}
 
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-gray-500 text-xs md:text-sm">
                           Please confirm your payment details before proceeding.
                         </p>
                       </Card>

@@ -88,7 +88,6 @@ export default function TeacherRegistrationPage() {
   // const selectedCountry = watch("country");
   // const selectedCity = watch("city");
   // const selectedCategory = watch("participationCategory");
-  
 
   const [showModal, setShowModal] = useState(false);
   const [countries, setCountries] = useState<Country[]>(countryData as any);
@@ -120,11 +119,8 @@ export default function TeacherRegistrationPage() {
   //   getCountries();
   // }, []);
 
-  
   let amount = 120_000;
   let currency: "NGN" | "USD" = "NGN";
-
-
 
   // Paystack config
   const paystackConfig = {
@@ -189,19 +185,18 @@ export default function TeacherRegistrationPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <div className="fixed flex justify-center top-5 w-full z-50 xl:px-32">
-        <NavigationBar />
-      </div>
       <header
-        className="w-full text-white py-20 pt-36 text-center shadow-md"
+        className="w-full text-white px-2 lg:px-0 py-20 pt-36 text-center shadow-md"
         style={{
           backgroundImage: "url(/bg-grad.jpg)",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
       >
-        <h1 className="text-4xl font-extrabold">Teacher Conference Registration</h1>
-        <p className="mt-3 text-lg font-medium">
+        <h1 className="text-2xl lg:text-4xl font-extrabold">
+          Teacher Conference Registration
+        </h1>
+        <p className="mt-3 text-md lg:text-lg font-medium">
           Pan African Literacy for All Conference 2025 – Join us in shaping
           Africa’s future
         </p>
@@ -218,8 +213,8 @@ export default function TeacherRegistrationPage() {
             />
           </div> */}
           {/* Form Section */}
-          <Card className="col-span-3 p-8 shadow-xl m-auto w-full max-w-4xl">
-            <h2 className="text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
+          <Card className="col-span-3 p-0 lg:p-8 shadow-xl m-auto w-full max-w-4xl">
+            <h2 className="text-2xl lg:text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
               Teacher Registration Form
             </h2>
 
@@ -361,44 +356,44 @@ export default function TeacherRegistrationPage() {
 
               {/* Registration Fees */}
               {/* {selectedCountry && selectedCategory && selectedCity && ( */}
-                <div className="flex justify-center mt-8">
-                  <Card className="w-full shadow-lg border rounded-2xl p-6">
-                    {/* Header */}
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                      Registration Checkout
-                    </h2>
+              <div className="flex justify-center mt-8">
+                <Card className="w-full shadow-lg border rounded-2xl lg:p-6">
+                  {/* Header */}
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                    Registration Checkout
+                  </h2>
 
-                    <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
-                      {/* Fee Row */}
-                      <div className="flex flex-col md:flex-row items-center gap-5 justify-start border-b pb-4 w-3/4">
-                        <span className="text-gray-600 text-lg">
-                          Conference Registration Fee:
-                        </span> 
-                        <span className="text-blue-600 font-extrabold text-xl">
-                          NGN 120,000
-                        </span>
-                      </div>
-
-                      {/* Pay Button */}
-                      <Button
-                        onClick={startPayment}
-                        gradientDuoTone="purpleToBlue"
-                        size="md"
-                        type="button"
-                        className="w-1/4 flex items-center justify-center gap-2"
-                      >
-                        <HiOutlineCreditCard className="text-lg h-5 mr-2" />
-                        Pay Now
-                      </Button>
+                  <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
+                    {/* Fee Row */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-5 justify-start border-b pb-4 w-full lg:w-3/4">
+                      <span className="text-gray-600 text-sm md:text-lg">
+                        Conference Registration Fee:
+                      </span>
+                      <span className="text-blue-600 font-extrabold text-lg md:text-xl">
+                        NGN 120,000
+                      </span>
                     </div>
 
-                    {/* Additional Info */}
+                    {/* Pay Button */}
+                    <Button
+                      onClick={startPayment}
+                      gradientDuoTone="purpleToBlue"
+                      size="md"
+                      type="button"
+                      className="w-full lg:w-1/4 flex items-center justify-center gap-2"
+                    >
+                      <HiOutlineCreditCard className="text-lg h-5 mr-2" />
+                      Pay Now
+                    </Button>
+                  </div>
 
-                    <p className="text-gray-500 text-sm">
-                      Please confirm your payment details before proceeding.
-                    </p>
-                  </Card>
-                </div>
+                  {/* Additional Info */}
+
+                  <p className="text-gray-500 text-xs md:text-sm">
+                    Please confirm your payment details before proceeding.
+                  </p>
+                </Card>
+              </div>
               {/* )} */}
             </form>
           </Card>

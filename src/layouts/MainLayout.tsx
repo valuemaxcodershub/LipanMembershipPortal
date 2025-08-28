@@ -11,8 +11,8 @@ function MainLayout() {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header Section */}
       <Navbar fluid className="sticky top-0 z-50 !bg-blue-700 lg:!px-24">
-        <div>
-          <Logo className="h-9 lg:h-14" />
+        <div className="h-9 lg:h-14">
+          <Logo className="w-full h-full" />
         </div>
         <div className="flex md:order-2 ml-5">
           <Navbar.Toggle className="text-white hover:bg-transparent" />
