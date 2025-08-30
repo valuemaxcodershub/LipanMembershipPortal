@@ -67,13 +67,8 @@ const presentationTypes = [
 ];
 
 async function checkCode(
-  id: string,
-  email: string
+  id: string
 ): Promise<{ valid: boolean; message: string } | undefined> {
-  if (!email) {
-    toast.error("Please enter your email first.");
-    return;
-  }
   const pattern = /^Li\d{4}PAN$/;
   if (!pattern.test(id)) {
     return {
@@ -84,19 +79,18 @@ async function checkCode(
 
   // Simulate API call to validate the code
   try {
-    await axios.post("/accounts/user/verify-id/", { lipan_id: id, email });
+    await axios.post("/accounts/user/verify-id/", { lipan_id: id });
     return {
       valid: true,
-      message: "✅ Membership ID is valid and recognized.",
+      message: "✅ ID validated successfully.",
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
     return {
       valid: false,
-      message: "❌ Error validating ID. Please try again later.",
+      message: err?.response?.data?.message || "❌ Error validating ID. Please try again later.",
     };
   }
-
 }
 
 export default function RegistrationPage() {
@@ -137,7 +131,7 @@ export default function RegistrationPage() {
 
   const handleCheck = async () => {
     setIsCheckingCode(true);
-    const res = await checkCode(code, watch("email"));
+    const res = await checkCode(code);
     setResult(res);
     setIsCheckingCode(false);
   };
