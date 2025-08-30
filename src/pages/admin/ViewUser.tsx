@@ -22,7 +22,7 @@ import PasswordInput from "../../components/UI/PasswordInput";
 import { useAuth } from "../../hooks/auth";
 
 // 🔵 Validation Schema
-const profileSchema = yup.object().shape({
+const profileSchema = yup.object({
   first_name: yup.string().required("First Name is required"),
   last_name: yup.string().required("Last Name is required"),
   title: yup.string().required("Title is required"),
@@ -39,7 +39,7 @@ const profileSchema = yup.object().shape({
   membership_type: yup.string().nullable(),
 });
 
-const passwordSchema = yup.object().shape({
+const passwordSchema = yup.object({
   new_password1: yup
     .string()
     .min(6, "New password must be at least 6 characters")

@@ -9,7 +9,7 @@ interface PasswordInputProps
 type InputRef = HTMLInputElement | null;
 import { Label, TextInput, Tooltip } from "flowbite-react";
 
-const PasswordInput = forwardRef<InputRef, PasswordInputProps>(
+const PasswordInput = forwardRef<InputRef, Omit<PasswordInputProps, "type">>(
   ({ error, label, placeholder="********", ...otherProps }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const togglePasswordVisibility = () => {

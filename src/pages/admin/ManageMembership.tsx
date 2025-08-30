@@ -99,6 +99,7 @@ export default function MembershipCreateEditPage() {
         ]);
         const permissionsList = permissionRes.data;
         const benefitslist = benefitsRes.data 
+        console.log(benefitslist, permissionsList)
 
         setBenefits(
           benefitslist.map((item: any) => ({

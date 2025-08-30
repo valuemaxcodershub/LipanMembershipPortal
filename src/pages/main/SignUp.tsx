@@ -260,7 +260,6 @@ function MultiSectionForm() {
             <Label value="Password" />
             <PasswordInput
               {...register("password1")}
-              type="password"
               placeholder="Password"
               error={errors.password1}
             />
@@ -269,7 +268,6 @@ function MultiSectionForm() {
             <Label value="Confirm Password" />
             <PasswordInput
               {...register("password2")}
-              type="password"
               placeholder="Confirm Password"
               error={errors.password2}
             />

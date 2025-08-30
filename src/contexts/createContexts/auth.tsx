@@ -8,6 +8,7 @@ export interface UserType {
   phone: string;
   is_admin: boolean;
   is_superuser: boolean;
+  lipan_id: string;
   payment_status: "unpaid" | "paid" | "pending";
   membership_detail: Record<string, any> | null;
 }

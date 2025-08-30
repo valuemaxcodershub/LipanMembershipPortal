@@ -120,6 +120,9 @@ function MemberDashboard() {
               ? `You are a ${dashboard.subscription.membership_type} member (${dashboard.subscription.plan_type} plan).`
               : "Upgrade your membership for unlimited access and exclusive features."}
           </p>
+          <p className="text-gray-600 dark:text-gray-400 text-xl mt-1">
+            LiPAN membership ID: <span className="text-blue-600 font-bold">{user?.lipan_id || "N/A"}</span>
+          </p>
           <Button
             gradientDuoTone="purpleToBlue"
             className="mt-4"
