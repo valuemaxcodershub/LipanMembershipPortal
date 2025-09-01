@@ -90,7 +90,7 @@ export default function AdminMembershipsListPage() {
                 </div>
               </Card>
             ))
-          : memberships.map((membership) => (
+          : memberships.reverse().map((membership) => (
               <Card
                 key={membership.id}
                 className="bg-white text-gray-900 shadow-md dark:bg-gray-800 dark:text-white relative group"
@@ -127,7 +127,7 @@ export default function AdminMembershipsListPage() {
                 <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-400">
                   {membership.name}
                 </h3>
-                <p className="mt-2 text-gray-700 dark:text-gray-300">
+                <p className="mt-2 text-gray-700 dark:text-gray-300 truncate">
                   {membership.description}
                 </p>
                 <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-200">

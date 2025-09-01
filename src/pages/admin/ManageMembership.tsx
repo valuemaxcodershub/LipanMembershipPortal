@@ -88,7 +88,7 @@ export default function MembershipCreateEditPage() {
             name: data.name,
             description: data.description,
             price: data.price,
-            benefits: data.benefits.map((p: any) => p.key),
+            benefits: data.benefits.map((b: any) => b.id),
             permissions: data.permissions.map((p: any) => p.key),
           });
         }
@@ -124,6 +124,7 @@ export default function MembershipCreateEditPage() {
   }, [value, reset, navigate, isEditing]);
 
   const onSubmit = async (data: MembershipSchemaType) => {
+    console.log(data)
     try {
       if (isEditing) {
         await axios.put(`/membership/${value}/`, data);
