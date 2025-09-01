@@ -55,7 +55,7 @@ const profileSchema = yup.object().shape({
   level_of_learners: yup
     .string()
     .required("Please select one level of learners"),
-  bio: yup.string(),
+  bio: yup.string().nullable(),
   profile_pic: yup.mixed(),
   // .test("fileSize", "File size is too large", (value) => {
   //   return (

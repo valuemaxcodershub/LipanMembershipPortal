@@ -3,6 +3,7 @@ export interface MembershipPlan {
   name: string;
   price: number;
   permissions: any[];
+  benefits: any[];
 }
 
 export type Transaction = {

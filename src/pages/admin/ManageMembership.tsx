@@ -98,8 +98,8 @@ export default function MembershipCreateEditPage() {
           axios.get("/benefits/"),
         ]);
         const permissionsList = permissionRes.data;
-        const benefitslist = benefitsRes.data 
-        console.log(benefitslist, permissionsList)
+        const benefitslist = benefitsRes.data;
+        console.log(benefitslist, permissionsList);
 
         setBenefits(
           benefitslist.map((item: any) => ({
@@ -124,7 +124,7 @@ export default function MembershipCreateEditPage() {
   }, [value, reset, navigate, isEditing]);
 
   const onSubmit = async (data: MembershipSchemaType) => {
-    console.log(data)
+    console.log(data);
     try {
       if (isEditing) {
         await axios.put(`/membership/${value}/`, data);
@@ -226,7 +226,7 @@ export default function MembershipCreateEditPage() {
               multiple
               value={watch("benefits") as string[]}
               onChange={(val) => setValue("benefits", val as string[])}
-              renderItem={(item, isSelected) => (
+              renderItem={(item: any, isSelected) => (
                 <div className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all">
                   <Checkbox color="blue" checked={isSelected} readOnly />
                   <span className="text-sm text-gray-800 dark:text-gray-100">
@@ -236,9 +236,7 @@ export default function MembershipCreateEditPage() {
               )}
             />
             {errors.benefits && (
-              <p className="text-sm text-red-500">
-                {errors.benefits.message}
-              </p>
+              <p className="text-sm text-red-500">{errors.benefits.message}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -248,7 +246,7 @@ export default function MembershipCreateEditPage() {
               multiple
               value={watch("permissions") as string[]}
               onChange={(val) => setValue("permissions", val as string[])}
-              renderItem={(item, isSelected) => (
+              renderItem={(item: any, isSelected) => (
                 <div className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all">
                   <Checkbox color="blue" checked={isSelected} readOnly />
                   <span className="text-sm text-gray-800 dark:text-gray-100">

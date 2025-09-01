@@ -76,6 +76,9 @@ export default function ViewUserPage() {
     reset,
   } = useForm({
     resolver: yupResolver(profileSchema),
+    defaultValues: {
+      plan_type: "yearly",
+    }
   });
 
   const fetchUserData = async () => {
@@ -446,7 +449,7 @@ export default function ViewUserPage() {
                       ))}
                     </Select>
                   </div>
-                  <div>
+                  {/* <div>
                     <Label value="Plan Type" />
                     <Select
                       {...register("plan_type")}
@@ -460,7 +463,7 @@ export default function ViewUserPage() {
                         </option>
                       ))}
                     </Select>
-                  </div>
+                  </div> */}
                   <div>
                     <Label value="Payment Method" />
                     <Select

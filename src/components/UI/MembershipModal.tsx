@@ -52,16 +52,16 @@ export const MembershipSelectionModal = ({
     fetchMembership();
   }, []);
 
-  useEffect(() => {
-    if (!memberships.length) return;
-    setMembershipsFilter(memberships);
-    setMembershipsFilter((prev) =>
-      prev.map((plan) => ({
-        ...plan,
-        price: keyMap[activeTab] === "month" ? plan.price : plan.price * 12,
-      }))
-    );
-  }, [activeTab]);
+  // useEffect(() => {
+  //   if (!memberships.length) return;
+  //   setMembershipsFilter(memberships);
+  //   setMembershipsFilter((prev) =>
+  //     prev.map((plan) => ({
+  //       ...plan,
+  //       price: keyMap[activeTab] === "month" ? plan.price : plan.price * 12,
+  //     }))
+  //   );
+  // }, [activeTab]);
 
   return (
     <Modal show={isOpen} onClose={onClose} size="7xl" position="center">
@@ -101,12 +101,12 @@ export const MembershipSelectionModal = ({
                   setActiveTab(String(tab) as keyof typeof keyMap)
                 }
               >
-                <TabItem active title="Monthly" icon={BsCalendarMonth} />
+                {/* <TabItem active title="Monthly" icon={BsCalendarMonth} /> */}
                 <TabItem title="Yearly" icon={FaCalendar} />
               </Tabs>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {membershipsFilter.map((membShip) => (
+              {membershipsFilter.reverse().map((membShip) => (
                 <Card
                   key={membShip.name}
                   className="p-6 shadow-xl border-2 border-blue-100 hover:border-blue-500 transition-all duration-200"
@@ -114,21 +114,23 @@ export const MembershipSelectionModal = ({
                   <p className="text-2xl text-blue-600 font-semibold mb-2">
                     &#8358;{membShip.price}{" "}
                     <span className="text-sm text-black dark:text-white">
-                      /{keyMap[activeTab]}
+                      {/* /{keyMap[activeTab]} */}
+                      /Year
                     </span>
                   </p>
                   <h3 className="text-xl font-bold text-blue-700">
                     {membShip.name}
                   </h3>
                   <ul className="text-sm text-gray-700 dark:text-gray-100 mt-2 list-disc pl-4 h-[100px] max-h-[100px] overflow-y-auto">
-                    {membShip.permissions.map((permission, index) => (
-                      <li key={index}>{permission.label}</li>
+                    {membShip.benefits.map((benefit, index) => (
+                      <li key={index}>{benefit.name}</li>
                     ))}
                   </ul>
                   <Button
                     className="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold"
                     onClick={() =>
-                      onSelect({ ...membShip, plan: `${keyMap[activeTab]}ly` })
+                      // onSelect({ ...membShip, plan: `${keyMap[activeTab]}ly` })
+                      onSelect({ ...membShip, plan: `yearly` })
                     }
                   >
                     Select Plan
