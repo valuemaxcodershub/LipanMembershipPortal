@@ -23,7 +23,7 @@ import {
   Card,
   Label,
 } from "flowbite-react";
-import { createElement, useState } from "react";
+import { createElement, useState, useEffect } from "react";
 import { Logo } from "../../components/UI/Logo";
 import SpinnerLogo from "../../components/UI/LogoLoader";
 import { signUpSchema, SignUpSchemaType } from "../../schemas/mainauth";
@@ -43,16 +43,45 @@ function MultiSectionForm() {
     trigger,
     watch,
     reset,
+    setValue,
   } = useForm<SignUpSchemaType>({
     resolver: yupResolver(signUpSchema),
     mode: "onChange",
     defaultValues: {
       areas_of_interest: [],
+      state: "",
+      lga: "",
     },
   });
 
   const [section, setSection] = useState(0);
   const [sectionLoading, setSectionLoading] = useState(false);
+  const [states, setStates] = useState<string[]>([]);
+  const [lgas, setLgas] = useState<string[]>([]);
+
+  const selectedState = watch("state");
+
+  useEffect(() => {
+    fetch("https://nga-states-lga.onrender.com/fetch")
+      .then((response) => response.json())
+      .then((data) => setStates(data))
+      .catch((error) => console.error("Error fetching states:", error));
+  }, []);
+
+  useEffect(() => {
+    if (selectedState) {
+      fetch(`https://nga-states-lga.onrender.com/?state=${selectedState}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setLgas(data);
+          setValue("lga", "");
+        })
+        .catch((error) => console.error("Error fetching LGAs:", error));
+    } else {
+      setLgas([]);
+      setValue("lga", "");
+    }
+  }, [selectedState, setValue]);
 
   const sections = [
     {
@@ -147,12 +176,34 @@ function MultiSectionForm() {
           </div>
           <div className="my-6">
             <Label value="State" />
-            <TextInput
+            <Select
               {...register("state")}
-              placeholder="State"
               color={errors.state ? "failure" : undefined}
               helperText={errors.state?.message}
-            />
+            >
+              <option value="">---Select State---</option>
+              {states.map((state, index) => (
+                <option key={index} value={state}>
+                  {state}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="my-6">
+            <Label value="Local Government Area" />
+            <Select
+              {...register("lga")}
+              color={errors.lga ? "failure" : undefined}
+              helperText={errors.lga?.message}
+              disabled={!selectedState}
+            >
+              <option value="">---Select LGA---</option>
+              {lgas.map((lga, index) => (
+                <option key={index} value={lga}>
+                  {lga}
+                </option>
+              ))}
+            </Select>
           </div>
           <div className="my-6">
             <Label value="ZIP Code" />
@@ -318,12 +369,12 @@ function MultiSectionForm() {
   };
 
   const formSections = [
-    ["prefix", "title", "suffix", "full_name", "organization"],
-    ["mailing_address", "city", "state", "zip_code"],
-    ["phone", "email", "terms"],
+    ["title", "first_name", "last_name", "gender", "organization"],
+    ["mailing_address", "city", "state", "lga", "zip_code"],
+    ["phone", "email"],
     ["areas_of_interest"],
     ["level_of_learners"],
-    ["password", "confirm_password", "terms"],
+    ["password1", "password2", "terms"],
   ];
 
   const nextSection = async () => {

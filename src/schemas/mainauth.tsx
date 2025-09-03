@@ -19,6 +19,7 @@ export const signUpSchema = yup.object({
   mailing_address: yup.string().required("Mailing address is required"),
   city: yup.string().required("City is required"),
   state: yup.string().required("State is required"),
+  lga: yup.string().required("Local Gov't Area is required"),
   zip_code: yup.string(),
   phone: yup.string().required("Phone number is required"),
   email: yup.string().required("Email is required").email("Invalid email"),

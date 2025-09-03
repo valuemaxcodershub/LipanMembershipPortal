@@ -45,10 +45,12 @@ type User = {
   full_name: string;
   email: string;
   membership_type: string;
-lipan_id: string;
+  lipan_id: string;
   is_staff: boolean;
   is_active: boolean;
   profile_pic: string | null;
+  state: string | null;
+  lga: string | null;
 };
 
 const addUserSchema = yup.object().shape({
@@ -85,14 +87,18 @@ const UserManagementPage = () => {
   const membership_type = searchParams.get("membership_type") || "";
   const is_active = searchParams.get("is_active") || "";
   const user_type = searchParams.get("user_type") || "users";
+  const state = searchParams.get("state") || "";
+  const lga = searchParams.get("lga") || "";
 
   const [users, setUsers] = useState<User[]>([]);
-  // const [activeTab, setActiveTab] = useState<UserMapType>("0");
-
   const [membership, setMembership] = useState([]);
   const [membershipMap, setMembershipMap] = useState<any>(null);
   const [membershipFilter, setMembershipFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+  const [lgaFilter, setLgaFilter] = useState("");
+  const [states, setStates] = useState<string[]>([]);
+  const [lgas, setLgas] = useState<string[]>([]);
   const [searchValue, setSearchValue] = useState("");
   const [debounceValue, setDebounceValue] = useState("");
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -119,6 +125,32 @@ const UserManagementPage = () => {
     },
   });
 
+  useEffect(() => {
+    fetch("https://nga-states-lga.onrender.com/fetch")
+      .then((response) => response.json())
+      .then((data) => setStates(data))
+      .catch((error) => console.error("Error fetching states:", error));
+  }, []);
+
+  useEffect(() => {
+    if (stateFilter) {
+      fetch(`https://nga-states-lga.onrender.com/?state=${stateFilter}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setLgas(data);
+          if (!data.includes(lgaFilter)) {
+            setLgaFilter("");
+            updateParams({ lga: "" });
+          }
+        })
+        .catch((error) => console.error("Error fetching LGAs:", error));
+    } else {
+      setLgas([]);
+      setLgaFilter("");
+      updateParams({ lga: "" });
+    }
+  }, [stateFilter]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -128,7 +160,15 @@ const UserManagementPage = () => {
       const [membershipResponse, usersResponse] = await Promise.all([
         axios.get(`/membership/`),
         axios.get("/accounts/users/", {
-          params: { page, search, membership_type, is_active, type: user_type },
+          params: {
+            page,
+            search,
+            membership_type,
+            is_active,
+            state,
+            lga,
+            type: user_type,
+          },
         }),
       ]);
 
@@ -156,17 +196,20 @@ const UserManagementPage = () => {
     }, 500);
     return () => clearInterval(id);
   }, [searchValue]);
+
   useEffect(() => {
     updateParams({
       search: debounceValue,
       is_active: statusFilter,
       membership_type: membershipFilter,
+      state: stateFilter,
+      lga: lgaFilter,
     });
-  }, [debounceValue, statusFilter, membershipFilter]);
+  }, [debounceValue, statusFilter, membershipFilter, stateFilter, lgaFilter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, search, membership_type, is_active, user_type]);
+  }, [page, search, membership_type, is_active, state, lga, user_type]);
 
   const onSubmit = async (data: any) => {
     console.log(data);
@@ -180,8 +223,7 @@ const UserManagementPage = () => {
         response.data.detail ||
           `${data.is_staff ? "Admin" : "User"} added successfully!`
       );
-      
-      fetchUsers(); // Refresh the user list after adding a new user
+      fetchUsers();
     } catch (err: any) {
       const errMsg = errorHandler(err);
       console.error(err.response);
@@ -271,7 +313,7 @@ const UserManagementPage = () => {
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full md:w-3/5"
         />
-        <div className="flex gap-4 w-full md:w-2/5">
+        <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/5">
           {user_type === "users" && (
             <Select
               disabled={loading}
@@ -296,6 +338,32 @@ const UserManagementPage = () => {
             <option value="">All Statuses</option>
             <option value="true">Active</option>
             <option value="false">Suspended</option>
+          </Select>
+          <Select
+            disabled={loading}
+            onChange={(e) => setStateFilter(e.target.value)}
+            value={stateFilter}
+            className="w-full"
+          >
+            <option value="">All States</option>
+            {states.map((state, index) => (
+              <option key={index} value={state}>
+                {state}
+              </option>
+            ))}
+          </Select>
+          <Select
+            disabled={loading || !stateFilter}
+            onChange={(e) => setLgaFilter(e.target.value)}
+            value={lgaFilter}
+            className="w-full"
+          >
+            <option value="">All LGAs</option>
+            {lgas.map((lga, index) => (
+              <option key={index} value={lga}>
+                {lga}
+              </option>
+            ))}
           </Select>
         </div>
       </div>
@@ -338,13 +406,15 @@ const UserManagementPage = () => {
               <Table.HeadCell>Membership</Table.HeadCell>
             )}
             <Table.HeadCell>Status</Table.HeadCell>
+            <Table.HeadCell>State</Table.HeadCell>
+            <Table.HeadCell>LGA</Table.HeadCell>
             <Table.HeadCell>Actions</Table.HeadCell>
           </Table.Head>
           <Table.Body>
             {loading ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={8}
+                  colSpan={10}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 py-6"
                 >
                   <div className="flex justify-center">
@@ -356,7 +426,7 @@ const UserManagementPage = () => {
             ) : error ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={8}
+                  colSpan={10}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 text-red-500 py-6"
                 >
                   {error}
@@ -365,7 +435,7 @@ const UserManagementPage = () => {
             ) : users.length === 0 ? (
               <Table.Row>
                 <Table.Cell
-                  colSpan={8}
+                  colSpan={10}
                   className="bg-white text-center dark:bg-gray-800 border-b dark:border-gray-700 text-gray-500 py-6"
                 >
                   No {user_type} found.
@@ -401,7 +471,7 @@ const UserManagementPage = () => {
                     <p className="truncate max-w-[200px]">{user.full_name}</p>
                   </Table.Cell>
                   <Table.Cell>{user.email}</Table.Cell>
-                  <Table.Cell >{user.lipan_id}</Table.Cell>
+                  <Table.Cell>{user.lipan_id}</Table.Cell>
                   <Table.Cell>
                     <Badge
                       className="w-fit mx-auto"
@@ -435,13 +505,14 @@ const UserManagementPage = () => {
                       {user.is_active ? "Active" : "Suspended"}
                     </Badge>
                   </Table.Cell>
+                  <Table.Cell>{user.state || "N/A"}</Table.Cell>
+                  <Table.Cell>{user.lga || "N/A"}</Table.Cell>
                   <Table.Cell>
                     <div className="flex justify-center gap-2">
                       <Button
                         size="xs"
                         color="blue"
                         className="!w-fit"
-                        // onClick={() => openUserModal(user)}
                         as={Link}
                         to={`/admin/manage-users/${user.id}/${user.is_staff ? "admins" : "users"}/view`}
                       >
@@ -616,17 +687,17 @@ const UserManagementPage = () => {
                   onChange={(val) => setValue("is_staff", val as boolean)}
                   allowBooleanToggle
                   value={watch("is_staff")}
-                  renderItem={(item, isSelected) => (
+                  renderItem={(item: any, isSelected) => (
                     <div
                       className={`w-[90px] rounded-md cursor-pointer bg-gray-200 dark:bg-gray-800 p-3 ${isSelected ? "border-2 border-blue-600 !text-blue-600" : "border"}`}
                     >
                       <div
                         className={`text-4xl ${isSelected ? "text-blue-600" : "text-gray-500"} m-auto w-fit`}
                       >
-                        {item.icon as any}
+                        {item.icon}
                       </div>
                       <p className="text-xs font-semibold text-center dark:text-gray-200">
-                        {item.label as any}
+                        {item.label}
                       </p>
                     </div>
                   )}
@@ -684,7 +755,6 @@ const UserManagementPage = () => {
             ? "success"
             : "failure"
         }
-        // destructive
       />
     </div>
   );

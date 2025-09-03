@@ -32,6 +32,7 @@ const profileSchema = yup.object({
   mailing_address: yup.string().nullable(),
   city: yup.string().nullable(),
   state: yup.string().nullable(),
+  lga: yup.string().nullable(),
   zip_code: yup.string().nullable(),
   payment_status: yup.string().nullable(),
   payment_method: yup.string().nullable(),
@@ -68,18 +69,48 @@ export default function ViewUserPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [states, setStates] = useState<string[]>([]);
+  const [lgas, setLgas] = useState<string[]>([]);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
+    setValue,
   } = useForm({
     resolver: yupResolver(profileSchema),
     defaultValues: {
       plan_type: "yearly",
-    }
+      state: "",
+      lga: "",
+    },
   });
+
+  const selectedState = watch("state");
+
+  useEffect(() => {
+    fetch("https://nga-states-lga.onrender.com/fetch")
+      .then((response) => response.json())
+      .then((data) => setStates(data))
+      .catch((error) => console.error("Error fetching states:", error));
+  }, []);
+
+  useEffect(() => {
+    if (selectedState) {
+      fetch(`https://nga-states-lga.onrender.com/?state=${selectedState}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setLgas(data);
+          setValue("lga", "");
+        })
+        .catch((error) => console.error("Error fetching LGAs:", error));
+    } else {
+      setLgas([]);
+      setValue("lga", "");
+    }
+  }, [selectedState, setValue]);
 
   const fetchUserData = async () => {
     setIsFetching(true);
@@ -110,6 +141,7 @@ export default function ViewUserPage() {
       console.error("Error fetching user data:", error);
     }
   };
+
   useEffect(() => {
     fetchUserData();
   }, []);
@@ -121,7 +153,6 @@ export default function ViewUserPage() {
 
   const onSubmit = async (data: any) => {
     console.log("Updated Profile Data:", data);
-    // ⏩ You can trigger an update API here
     try {
       const { data: updatedData } = await axios.patch(
         `/accounts/users/${id}/`,
@@ -151,7 +182,7 @@ export default function ViewUserPage() {
       );
       passwordReset();
       toast.update(toastId, {
-        render: response?.data?.detail || "Password change successfull",
+        render: response?.data?.detail || "Password change successful",
         type: "success",
         isLoading: false,
         autoClose: 3000,
@@ -166,6 +197,7 @@ export default function ViewUserPage() {
       });
     }
   };
+
   return (
     <div className="max-w-6xl mx-auto p-0 lg:p-6 space-y-8">
       {/* 🔵 Back Button */}
@@ -185,7 +217,7 @@ export default function ViewUserPage() {
               <Skeleton className="size-[200px] rounded-full" />
               <div>
                 <Skeleton className="h-6 mb-3 w-[50px] rounded" />
-                <Skeleton className="h-6  w-[250px] rounded" />
+                <Skeleton className="h-6 w-[250px] rounded" />
               </div>
             </div>
             <Skeleton className="h-24 w-full mb-4 rounded" />
@@ -196,7 +228,6 @@ export default function ViewUserPage() {
               <Skeleton className="h-11 w-full mb-4 rounded" />
               <Skeleton className="h-11 w-full mb-4 rounded" />
               <Skeleton className="h-11 w-full mb-4 rounded" />
-
               <div className="col-span-1 md:col-span-2">
                 <Skeleton className="h-11 w-full mb-4 rounded" />
               </div>
@@ -247,6 +278,7 @@ export default function ViewUserPage() {
               />
               <ProfileField label="City" value={user?.city} />
               <ProfileField label="State" value={user?.state} />
+              <ProfileField label="Local Government Area" value={user?.lga} />
               <div className="col-span-1 md:col-span-2">
                 <ProfileField label="ZIP Code" value={user?.zip_code} />
               </div>
@@ -287,7 +319,6 @@ export default function ViewUserPage() {
           <h3 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">
             Change Password
           </h3>
-
           <form
             onSubmit={handlePasswordSubmit(onChangePassword)}
             className="space-y-4"
@@ -308,7 +339,6 @@ export default function ViewUserPage() {
                 />
               </div>
             </div>
-
             <Button color="blue" type="submit" fullSized>
               Update Password
             </Button>
@@ -350,7 +380,7 @@ export default function ViewUserPage() {
                   color={errors.title ? "failure" : undefined}
                   helperText={errors.title?.message}
                 >
-                  <option value="">Select Membership Type</option>
+                  <option value="">Select Title</option>
                   {["Mr", "Miss", "Dr", "Prof", "Mrs"].map((opt: string) => (
                     <option key={opt} value={opt.toLowerCase()}>
                       {opt}
@@ -365,7 +395,7 @@ export default function ViewUserPage() {
                   color={errors.gender ? "failure" : undefined}
                   helperText={errors.gender?.message}
                 >
-                  <option value="">Select Membership Type</option>
+                  <option value="">Select Gender</option>
                   {["Male", "Female", "Other"].map((opt: string) => (
                     <option key={opt} value={opt.toLowerCase()}>
                       {opt}
@@ -399,11 +429,34 @@ export default function ViewUserPage() {
               </div>
               <div>
                 <Label value="State" />
-                <TextInput
+                <Select
                   {...register("state")}
                   color={errors.state ? "failure" : undefined}
                   helperText={errors.state?.message}
-                />
+                >
+                  <option value="">Select State</option>
+                  {states.map((state, index) => (
+                    <option key={index} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label value="Local Government Area" />
+                <Select
+                  {...register("lga")}
+                  color={errors.lga ? "failure" : undefined}
+                  helperText={errors.lga?.message}
+                  disabled={!selectedState}
+                >
+                  <option value="">Select LGA</option>
+                  {lgas.map((lga, index) => (
+                    <option key={index} value={lga}>
+                      {lga}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div>
                 <Label value="ZIP Code" />
@@ -441,7 +494,7 @@ export default function ViewUserPage() {
                       color={errors.payment_status ? "failure" : undefined}
                       helperText={errors.payment_status?.message}
                     >
-                      <option value="">Select Membership Type</option>
+                      <option value="">Select Payment Status</option>
                       {["Paid", "Unpaid"].map((opt: string) => (
                         <option key={opt} value={opt.toLowerCase()}>
                           {opt}
@@ -449,21 +502,6 @@ export default function ViewUserPage() {
                       ))}
                     </Select>
                   </div>
-                  {/* <div>
-                    <Label value="Plan Type" />
-                    <Select
-                      {...register("plan_type")}
-                      color={errors.plan_type ? "failure" : undefined}
-                      helperText={errors.plan_type?.message}
-                    >
-                      <option value="">Select Membership Type</option>
-                      {["Monthly", "Yearly"].map((opt: string) => (
-                        <option key={opt} value={opt.toLowerCase()}>
-                          {opt}
-                        </option>
-                      ))}
-                    </Select>
-                  </div> */}
                   <div>
                     <Label value="Payment Method" />
                     <Select
@@ -471,7 +509,7 @@ export default function ViewUserPage() {
                       color={errors.payment_method ? "failure" : undefined}
                       helperText={errors.payment_method?.message}
                     >
-                      <option value="">Select Membership Type</option>
+                      <option value="">Select Payment Method</option>
                       {["Cash", "Transfer"].map((opt: string) => (
                         <option key={opt} value={opt.toLowerCase()}>
                           {opt}
