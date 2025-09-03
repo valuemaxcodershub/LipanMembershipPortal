@@ -175,7 +175,7 @@ function MultiSectionForm() {
             />
           </div>
           <div className="my-6">
-            <Label value="State" />
+            <Label value="State of residence" />
             <Select
               {...register("state")}
               color={errors.state ? "failure" : undefined}
