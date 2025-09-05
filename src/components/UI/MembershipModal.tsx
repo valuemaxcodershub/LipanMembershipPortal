@@ -9,7 +9,6 @@ import axios from "../../config/axios";
 import { Skeleton } from "./Skeleton";
 import { FaCalendar } from "react-icons/fa";
 
-
 const keyMap = {
   "0": "month",
   "1": "year",
@@ -35,7 +34,7 @@ export const MembershipSelectionModal = ({
     setIsFetching(true);
     try {
       const { data } = await axios.get("/membership/");
-      console.log(data)
+      console.log(data);
       const plans = data.results.map((plan: any) => ({
         ...plan,
         price: Math.round(Number(plan.price)),
