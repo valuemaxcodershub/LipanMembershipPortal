@@ -280,15 +280,15 @@ export default function ViewUserPage() {
               <ProfileField label="State" value={user?.state} />
               <ProfileField label="Local Government Area" value={user?.lga} />
               {/* <div className="col-span-1 md:col-span-2"> */}
-                <ProfileField label="ZIP Code" value={user?.zip_code} />
+              <ProfileField label="ZIP Code" value={user?.zip_code} />
               {/* </div> */}
               {!user?.is_staff && (
                 <>
                   {/* <div className="col-span-1 md:col-span-2"> */}
-                    <ProfileField
-                      label="Membership Type"
-                      value={membershipMap[`${user?.membership_type}`]}
-                    />
+                  <ProfileField
+                    label="Membership Type"
+                    value={membershipMap[`${user?.membership_type}`]}
+                  />
                   {/* </div> */}
                   <ProfileField
                     label="Payment Status"
