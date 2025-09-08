@@ -279,26 +279,26 @@ export default function ViewUserPage() {
               <ProfileField label="City" value={user?.city} />
               <ProfileField label="State" value={user?.state} />
               <ProfileField label="Local Government Area" value={user?.lga} />
-              <div className="col-span-1 md:col-span-2">
+              {/* <div className="col-span-1 md:col-span-2"> */}
                 <ProfileField label="ZIP Code" value={user?.zip_code} />
-              </div>
+              {/* </div> */}
               {!user?.is_staff && (
                 <>
-                  <div className="col-span-1 md:col-span-2">
+                  {/* <div className="col-span-1 md:col-span-2"> */}
                     <ProfileField
                       label="Membership Type"
                       value={membershipMap[`${user?.membership_type}`]}
                     />
-                  </div>
+                  {/* </div> */}
                   <ProfileField
                     label="Payment Status"
                     value={user?.payment_status}
                   />
-                  <ProfileField label="Plan Type" value={user?.plan_type} />
+                  {/* <ProfileField label="Plan Type" value={user?.plan_type} />
                   <ProfileField
                     label="Payment Method"
                     value={user?.payment_method || "Not Paid"}
-                  />
+                  /> */}
                 </>
               )}
             </div>
@@ -502,7 +502,7 @@ export default function ViewUserPage() {
                       ))}
                     </Select>
                   </div>
-                  <div>
+                  {/* <div>
                     <Label value="Payment Method" />
                     <Select
                       {...register("payment_method")}
@@ -516,7 +516,7 @@ export default function ViewUserPage() {
                         </option>
                       ))}
                     </Select>
-                  </div>
+                  </div> */}
                 </>
               )}
             </div>
