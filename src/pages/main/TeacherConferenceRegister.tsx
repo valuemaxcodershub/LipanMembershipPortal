@@ -400,6 +400,7 @@ export default function TeacherRegistrationPage() {
         </div>
 
         <PaymentProcessingModal
+        title={"Payment Successful"}
           isOpen={showModal}
           transactionData={formValues}
           onClose={() => {

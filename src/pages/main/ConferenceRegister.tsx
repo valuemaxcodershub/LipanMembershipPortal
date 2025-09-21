@@ -54,6 +54,7 @@ const schema = yup.object({
   thematicArea: yup.string().nullable(),
   coAuthors: yup.string().nullable(),
   paymentMethod: yup.string().nullable(),
+  lipanId: yup.string().nullable(),
   presentationTypes: yup.array().default([]),
   // proposedTransport: yup.string().required("This field is required"),
   // reserveHotel: yup.string().required("This field is required"),
@@ -228,6 +229,7 @@ export default function RegistrationPage() {
     setValue("paymentTrxId", reference.transaction);
     setValue("paymentTrxRef", reference.trxref);
     setValue("paymentMethod", selected);
+    setValue("lipanId", code || null);
     setShowModal(true);
   };
 
@@ -248,7 +250,7 @@ export default function RegistrationPage() {
       toast.error("Please enter and validate your Membership ID.");
       return;
     }
-    if (!result || (result && !result?.valid)) {
+    if (result && !result?.valid) {
       return;
       // toast.success("Provide your membership id to continue.");
     }
@@ -258,6 +260,7 @@ export default function RegistrationPage() {
       setValue("paymentTrxId", "N/A");
       setValue("paymentTrxRef", "N/A");
       setValue("paymentMethod", selected);
+      setValue("lipanId", code || null)
       setShowModal(true);
     }
   };
@@ -809,6 +812,7 @@ export default function RegistrationPage() {
         </div>
 
         <PaymentProcessingModal
+          title={selected === "other" ? "Processing Submission" : "Payment Successful"}
           isOpen={showModal}
           transactionData={formValues}
           onClose={() => {

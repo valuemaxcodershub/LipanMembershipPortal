@@ -10,10 +10,12 @@ export default function PaymentProcessingModal({
   isOpen,
   onClose,
   transactionData,
+  title,
 }: {
   isOpen: boolean;
   onClose: () => void;
   transactionData: any;
+  title: string;
   }) {
   const navigate = useNavigate()
   const {pathname} = useLocation()
@@ -77,7 +79,7 @@ export default function PaymentProcessingModal({
             <FaShieldAlt className="w-20 h-20 text-blue-600 absolute inset-0" />
           </div>
 
-          <h3 className="text-lg font-semibold mb-2">Payment Successful</h3>
+          <h3 className="text-lg font-semibold mb-2">{title}</h3>
           {isSubmitting ? (
             <p className="text-gray-500 flex justify-center gap-3">
               <Spinner aria-label="Submitting" size="md" />
