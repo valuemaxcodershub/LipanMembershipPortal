@@ -52,8 +52,8 @@ function MainLayout() {
       <Footer container>
         <div className="w-full text-center">
           <Footer.Divider />
-          <div className="w-full justify-between sm:flex sm:items-center sm:justify-between">
-            <Logo className="bg-blue-700 rounded-xl p-1" />
+          <div className="w-full flex justify-between items-center">
+            <Logo className="bg-blue-700 rounded-md sm:rounded-xl p-1 !h-[2rem] sm:!h-14" />
             <Footer.Copyright
               href="#"
               by="LiPAN™"

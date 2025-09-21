@@ -5,9 +5,10 @@ import {
   FiClock,
   FiCheckCircle,
 } from "react-icons/fi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Transaction } from "../../types/_all";
 import TransactionReceiptModal from "../../components/UI/TransactionModal";
+import axios from "../../config/axios";
 
 const transactions = [
   {
@@ -41,7 +42,19 @@ const MyInvoicesPage = () => {
   const [invoices, setInvoices] = useState<Transaction[]>(transactions);
   const [selectedInvoice, setSelectedInvoice] = useState<Transaction | null>(null);
 
-  
+  const getInvoice = async () => {
+    try{
+      const {data} = await axios.get('/user/subscription-info/');
+      console.log("Invoices fetched successfully:", data);
+      // setInvoices(data);
+    }catch(err){
+      console.error("Error fetching invoices:", err);
+    }
+  }
+
+  useEffect(() => {
+    getInvoice();
+  }, []);
 
   const openInvoiceModal = (invoice: Transaction) => {
     setSelectedInvoice(invoice);

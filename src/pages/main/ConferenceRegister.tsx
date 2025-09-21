@@ -11,7 +11,15 @@ import {
   Textarea,
   Datepicker,
 } from "flowbite-react";
-import { FiUser, FiMail, FiPhone, FiGlobe, FiFileText } from "react-icons/fi";
+import {
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiGlobe,
+  FiFileText,
+  FiSmartphone,
+  FiCreditCard,
+} from "react-icons/fi";
 import { HiOutlineCreditCard } from "react-icons/hi";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -45,6 +53,7 @@ const schema = yup.object({
   paperTitle: yup.string().nullable(),
   thematicArea: yup.string().nullable(),
   coAuthors: yup.string().nullable(),
+  paymentMethod: yup.string().nullable(),
   presentationTypes: yup.array().default([]),
   // proposedTransport: yup.string().required("This field is required"),
   // reserveHotel: yup.string().required("This field is required"),
@@ -88,7 +97,9 @@ async function checkCode(
     console.error(err);
     return {
       valid: false,
-      message: err?.response?.data?.message || "❌ Error validating ID. Please try again later.",
+      message:
+        err?.response?.data?.message ||
+        "❌ Error validating ID. Please try again later.",
     };
   }
 }
@@ -110,6 +121,7 @@ export default function RegistrationPage() {
       country: "Nigeria",
       paymentTrxId: "",
       paymentTrxRef: "",
+      paymentMethod: "",
     },
   });
 
@@ -134,6 +146,17 @@ export default function RegistrationPage() {
     const res = await checkCode(code);
     setResult(res);
     setIsCheckingCode(false);
+  };
+
+  const [selected, setSelected] = useState<string>("");
+
+  const methods = [
+    { label: "Paystack", value: "paystack", icon: <FiSmartphone /> },
+    { label: "Other Methods", value: "other", icon: <FiCreditCard /> },
+  ];
+
+  const handleSelect = (value: string) => {
+    setSelected(value);
   };
 
   // const getCountries = async () => {
@@ -204,6 +227,7 @@ export default function RegistrationPage() {
     console.log("Payment successful:", reference);
     setValue("paymentTrxId", reference.transaction);
     setValue("paymentTrxRef", reference.trxref);
+    setValue("paymentMethod", selected);
     setShowModal(true);
   };
 
@@ -213,11 +237,29 @@ export default function RegistrationPage() {
 
   const initializePayment = usePaystackPayment(paystackConfig);
 
-  const startPayment = async () => {
+  const startPayment = () => {
+    initializePayment({ onSuccess, onClose });
+  };
+
+  const initializeRegister = async () => {
     const isFormValid = await trigger(undefined, { shouldFocus: true });
     if (!isFormValid) return;
-    if (result && !result.valid) return;
-    initializePayment({ onSuccess, onClose });
+    if (selectedFee === "Member – ₦30,000" && !code) {
+      toast.error("Please enter and validate your Membership ID.");
+      return;
+    }
+    if (!result || (result && !result?.valid)) {
+      return;
+      // toast.success("Provide your membership id to continue.");
+    }
+    if (selected && selected === "paystack") {
+      startPayment();
+    } else {
+      setValue("paymentTrxId", "N/A");
+      setValue("paymentTrxRef", "N/A");
+      setValue("paymentMethod", selected);
+      setShowModal(true);
+    }
   };
 
   const countryOptions = countries.map((country) => ({
@@ -264,7 +306,9 @@ export default function RegistrationPage() {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <h1 className="text-2xl lg:text-4xl font-extrabold">Conference Registration</h1>
+        <h1 className="text-2xl lg:text-4xl font-extrabold">
+          Conference Registration
+        </h1>
         <p className="mt-3 text-md lg:text-lg font-medium">
           Pan African Literacy for All Conference 2025 – Join us in shaping
           Africa’s future
@@ -657,13 +701,56 @@ export default function RegistrationPage() {
                       </div>
                     )}
 
-                  {selectedFee && (
+                  <div className="mt-10">
+                    <Label value="Select Payment Method" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {methods.map((method) => {
+                        const isSelected = selected === method.value;
+                        return (
+                          <div
+                            key={method.value}
+                            onClick={() => handleSelect(method.value)}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all
+                ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+                          >
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                isSelected
+                                  ? "border-blue-600"
+                                  : "border-gray-400"
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl text-blue-500">
+                                {method.icon}
+                              </span>
+                              <span className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                                {method.label}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {selectedFee && selected && (
                     <div className="flex justify-center mt-8">
                       <Card className="w-full shadow-lg border rounded-2xl lg:p-6">
                         {selectedFee === "Student – ₦20,000" && (
                           <p className="p-2 lg:p-5 rounded-xl border-l-4 border-blue-600 text-sm lg:text-md shadow">
-                            <span className="text-md lg:text-lg font-bold">Note:</span> You
-                            will be required to provide your student ID on
+                            <span className="text-md lg:text-lg font-bold">
+                              Note:
+                            </span>{" "}
+                            You will be required to provide your student ID on
                             conference entry
                           </p>
                         )}
@@ -685,14 +772,16 @@ export default function RegistrationPage() {
 
                           {/* Pay Button */}
                           <Button
-                            onClick={startPayment}
+                            onClick={initializeRegister}
                             gradientDuoTone="purpleToBlue"
                             size="md"
                             type="button"
                             className="w-full lg:w-1/4 flex items-center justify-center gap-2"
                           >
                             <HiOutlineCreditCard className="text-lg h-5 mr-2" />
-                            Pay Now
+                            {selected === "paystack"
+                              ? "Pay Now"
+                              : "Pay with Other Methods"}
                           </Button>
                         </div>
 
