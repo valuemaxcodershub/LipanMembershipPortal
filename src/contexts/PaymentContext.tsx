@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/auth";
 import axios from "../config/axios";
 import { errorHandler } from "../utils/api/errors";
 import { toast } from "react-toastify";
+import PaymentVerificationModal from "../components/UI/PaymentVerifyModal";
 
 const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -20,6 +21,12 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
   >(null);
   const [isProcessingPayment, setIsProcessingPayment] =
     useState<boolean>(false);
+  const [modalState, setModalState] = useState<any>({
+    open: false,
+    loading: false,
+    reference: "",
+    errorMessage: "",
+  });
 
   const openMembershipModal = () => setIsMembershipModalOpen(true);
   const closeMembershipModal = () => setIsMembershipModalOpen(false);
@@ -33,18 +40,50 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
     setTimeout(openPaymentModal, 300); // slight delay for smooth UX
   };
 
+  const verifyPayment = async (paymentData: any) => {
+    setModalState({
+      open: true,
+      loading: true,
+      reference: paymentData.transaction_ref,
+    });
+
+    try {
+      await axios.post("/payments/verify/", {
+        reference: paymentData.transaction_ref,
+      });
+
+      // Success
+      setModalState({
+        open: true,
+        loading: false,
+        reference: paymentData.transaction_ref,
+        errorMessage: undefined,
+      });
+
+      window.location.reload();
+      // maybe dispatch success state here
+    } catch (error: any) {
+      setModalState({
+        open: true,
+        loading: false,
+        reference: paymentData.transaction_ref,
+        errorMessage: error.response?.data?.detail || "Verification failed",
+      });
+    }
+  };
+
   const processPayment = async (paymentData: any) => {
-    console.log(paymentData);
+    // console.log(paymentData);
     setIsProcessingPayment(true);
 
     try {
-      console.log(paymentData);
-      const { data } = await axios.post("/user/transactions/", paymentData);
-      console.log(data);
-      toast.success(data?.detail || "Payment Successfull", {
+      // console.log(paymentData);
+      // const { data } = await axios.post("/user/transactions/", paymentData);
+      // console.log(data);
+      await verifyPayment(paymentData);
+      toast.success("Payment Successfull", {
         position: "top-center",
       });
-      window.location.reload();
     } catch (err: any) {
       console.error(err);
       const errorMsg = errorHandler(err);
@@ -81,6 +120,14 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
         membership={selectedMembership!}
         userInfo={user!}
         // onUserInfoChange={handleUserInfoChange}
+      />
+
+      <PaymentVerificationModal
+        open={modalState.open}
+        loading={modalState.loading}
+        reference={modalState.reference}
+        errorMessage={modalState.errorMessage}
+        onClose={() => setModalState((prev: any) => ({ ...prev, open: false }))}
       />
     </PaymentContext.Provider>
   );

@@ -18,6 +18,7 @@ import DashboardSidebar, {
   LinkType,
 } from "../components/navigation/DashboardSidebar";
 import { Outlet } from "react-router-dom";
+import { BiBuilding, BiCertification, BiSolidCertification, BiUserPlus } from "react-icons/bi";
 
 function AdminLayout() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -53,6 +54,22 @@ function AdminLayout() {
       name: "Events",
       icon: FiSpeaker,
       path: "events",
+    },
+    {
+      name: "Conferences",
+      icon: BiBuilding,
+      dropdown: [
+        {
+          name: "Registered Participants",
+          icon: BiUserPlus,
+          path: "conference/participants",
+        },
+        {
+          name: "Certificate Generation",
+          icon: BiSolidCertification,
+          path: "conference/certificates",
+        },
+      ],
     },
     {
       name: "Notifications & Announcements",

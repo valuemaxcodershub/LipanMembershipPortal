@@ -49,6 +49,7 @@ import MainLayout from "./layouts/MainLayout";
 import RegistrationSuccess from "./pages/main/ConferenceRegistrationSuccess";
 import TeacherRegistrationPage from "./pages/main/TeacherConferenceRegister";
 import ConferenceLayout from "./layouts/ConferenceLayout";
+import RegisteredParticipantsPage from "./pages/admin/conferences/RegisteredParticipants";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -153,6 +154,9 @@ function AppRoutes() {
           path="/admin/events/:title/:id/users"
           element={<AdminEventUsersPage />}
         />
+
+        <Route path="conference/participants" element={<RegisteredParticipantsPage />} />
+        <Route path="conference/certificates" element={<div>Certificates</div>} />
 
         <Route path="manage-journals" element={<ManageJournalsPage />} />
         <Route

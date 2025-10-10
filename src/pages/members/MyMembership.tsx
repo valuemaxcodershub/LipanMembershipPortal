@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import axios from "../../config/axios";
 import { formatDate } from "../../utils/app/time";
 import { Skeleton } from "../../components/UI/Skeleton";
+import Certificate from "../../components/UI/MembershipCertificate";
 
 type DetailsType = {
   membership: {
@@ -26,7 +27,7 @@ type DetailsType = {
 };
 
 const MyMembershipPage = () => {
-  const {openMembershipModal} = usePayment();
+  const { openMembershipModal } = usePayment();
   const [isFetching, setIsFetching] = useState(true);
   const [pageDetails, setPageDetails] = useState<DetailsType>({
     membership: null,
@@ -198,7 +199,7 @@ const MyMembershipPage = () => {
                 )}
               </motion.div>
 
-              <div className="mt-6 flex gap-4">
+              <div className="my-6 flex gap-4">
                 <Button
                   color="blue"
                   onClick={openMembershipModal}
@@ -207,6 +208,8 @@ const MyMembershipPage = () => {
                   Change Membership <FiArrowUpRight className="h-4 w-4" />
                 </Button>
               </div>
+
+              <Certificate />
             </Card>
 
             {/* Transaction History */}
