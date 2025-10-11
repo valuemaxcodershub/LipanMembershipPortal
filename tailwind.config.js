@@ -9,6 +9,7 @@ export default {
         vibes: ['"Great Vibes"', "cursive"],
         "dancing-script": ['"Dancing Script"', "cursive"],
         poppins: ['"Poppins"', "sans-serif"],
+        Ditty: ['"Ditty"', "sans-serif"],
       },
     },
   },

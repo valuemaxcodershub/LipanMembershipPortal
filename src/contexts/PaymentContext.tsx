@@ -69,6 +69,7 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
         reference: paymentData.transaction_ref,
         errorMessage: error.response?.data?.detail || "Verification failed",
       });
+      throw error;
     }
   };
 
@@ -90,6 +91,7 @@ const PaymentProvider = ({ children }: { children: ReactNode }) => {
       toast.error(errorMsg || "Payment Succesfully, but not registered", {
         position: "top-center",
       });
+      throw err;
     } finally {
       setIsProcessingPayment(false);
       closePaymentModal();

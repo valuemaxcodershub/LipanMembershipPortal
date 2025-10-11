@@ -32,6 +32,7 @@ import { Country } from "../../types/_all";
 import countryData from "../../data.json";
 import axios from "../../config/axios";
 import { toast } from "react-toastify";
+import { usePayment } from "../../hooks/payment";
 
 // ----------------------
 // Validation Schema (Yup)
@@ -123,8 +124,11 @@ export default function RegistrationPage() {
       paymentTrxId: "",
       paymentTrxRef: "",
       paymentMethod: "",
+      lipanId: "",
     },
   });
+
+  const { processPayment } = usePayment();
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const selectedFee = watch("registrationFee");
@@ -222,15 +226,39 @@ export default function RegistrationPage() {
     amount: amount * 100, // Paystack expects amount in kobo/cents
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY, // replace with your Paystack public key
     currency: currency,
+    metadata: {
+      custom_fields: [
+        {
+          display_name: "Purpose",
+          variable_name: "purpose",
+          value: "conference",
+        },
+        {
+          display_name: "Registration Data",
+          variable_name: "registration_data",
+          value: { ...formValues, lipanId: code || "" },
+        },
+      ],
+    },
   };
 
-  const onSuccess = (reference: any) => {
+  const onSuccess = async (reference: any) => {
     console.log("Payment successful:", reference);
-    setValue("paymentTrxId", reference.transaction);
-    setValue("paymentTrxRef", reference.trxref);
-    setValue("paymentMethod", selected);
-    setValue("lipanId", code || null);
-    setShowModal(true);
+    try {
+      await processPayment({
+        // transactionId: reference.transaction,
+        transaction_ref: reference.trxref,
+        // amount: reference.amount,
+        // email: reference.email,
+      });
+      setValue("paymentTrxId", reference.transaction);
+      setValue("paymentTrxRef", reference.trxref);
+      setValue("paymentMethod", selected);
+      setValue("lipanId", code || "");
+      setShowModal(true);
+    } catch (error) {
+      console.error("Payment processing error:", error);
+    }
   };
 
   const onClose = () => {
@@ -250,9 +278,9 @@ export default function RegistrationPage() {
       toast.error("Please enter and validate your Membership ID.");
       return;
     }
-    if (result && !result?.valid) {
+    if (code && !result?.valid) {
+      toast.error("Validate your membership id to continue.");
       return;
-      // toast.success("Provide your membership id to continue.");
     }
     if (selected && selected === "paystack") {
       startPayment();
@@ -260,7 +288,7 @@ export default function RegistrationPage() {
       setValue("paymentTrxId", "N/A");
       setValue("paymentTrxRef", "N/A");
       setValue("paymentMethod", selected);
-      setValue("lipanId", code || null)
+      setValue("lipanId", code || "");
       setShowModal(true);
     }
   };
@@ -696,7 +724,9 @@ export default function RegistrationPage() {
                         </div>
                         {result && (
                           <p
-                            className={`${result.valid ? "text-lime-500" : "text-red-500"} text-sm`}
+                            className={`${
+                              result.valid ? "text-lime-500" : "text-red-500"
+                            } text-sm`}
                           >
                             {result?.message}
                           </p>
@@ -812,7 +842,11 @@ export default function RegistrationPage() {
         </div>
 
         <PaymentProcessingModal
-          title={selected === "other" ? "Processing Submission" : "Payment Successful"}
+          title={
+            selected === "other"
+              ? "Processing Submission"
+              : "Payment Successful"
+          }
           isOpen={showModal}
           transactionData={formValues}
           onClose={() => {

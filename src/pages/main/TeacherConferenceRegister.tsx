@@ -24,6 +24,7 @@ import ReactSelect, { components as ReactSelectComponents } from "react-select";
 import { Country } from "../../types/_all";
 import axios from "axios";
 import countryData from "../../data.json";
+import { usePayment } from "../../hooks/payment";
 
 // ----------------------
 // Validation Schema (Yup)
@@ -47,6 +48,7 @@ const schema = yup.object({
   // dateOfArrival: yup.string().required("This field is required"),
   paymentTrxId: yup.string(),
   paymentTrxRef: yup.string(),
+  lipanId: yup.string().nullable(),
 });
 
 type FormValues = yup.InferType<typeof schema>;
@@ -79,8 +81,10 @@ export default function TeacherRegistrationPage() {
       paymentTrxId: "",
       paymentTrxRef: "",
       registrationFee: "Teacher - ₦120,000",
+      lipanId: "teacher",
     },
   });
+  const { processPayment } = usePayment();
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const formValues = watch();
@@ -129,13 +133,45 @@ export default function TeacherRegistrationPage() {
     amount: amount * 100, // Paystack expects amount in kobo/cents
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY, // replace with your Paystack public key
     currency: currency,
+    metadata: {
+      custom_fields: [
+        {
+          display_name: "Purpose",
+          variable_name: "purpose",
+          value: "conference",
+        },
+        {
+          display_name: "Registration Data",
+          variable_name: "registration_data",
+          // value: { ...formValues, lipanId: "teacher" },
+          value: formValues,
+        },
+      ],
+    },
   };
 
-  const onSuccess = (reference: any) => {
+  // const onSuccess = (reference: any) => {
+  //   console.log("Payment successful:", reference);
+  //   setValue("paymentTrxId", reference.transaction);
+  //   setValue("paymentTrxRef", reference.trxref);
+  //   setShowModal(true);
+  // };
+
+  const onSuccess = async (reference: any) => {
     console.log("Payment successful:", reference);
-    setValue("paymentTrxId", reference.transaction);
-    setValue("paymentTrxRef", reference.trxref);
-    setShowModal(true);
+    try {
+      await processPayment({
+        // transactionId: reference.transaction,
+        transaction_ref: reference.trxref,
+        // amount: reference.amount,
+        // email: reference.email,
+      });
+      setValue("paymentTrxId", reference.transaction);
+      setValue("paymentTrxRef", reference.trxref);
+      setShowModal(true);
+    } catch (error) {
+      console.error("Payment processing error:", error);
+    }
   };
 
   const onClose = () => {
@@ -400,7 +436,7 @@ export default function TeacherRegistrationPage() {
         </div>
 
         <PaymentProcessingModal
-        title={"Payment Successful"}
+          title={"Payment Successful"}
           isOpen={showModal}
           transactionData={formValues}
           onClose={() => {

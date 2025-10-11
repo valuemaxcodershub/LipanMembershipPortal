@@ -139,13 +139,14 @@ export default function RegisteredParticipantsPage() {
   const fetchParticipants = async (page = 1, query = "") => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/participants", {
-        params: { page, search: query, limit: pageSize },
+      const res = await axios.get("/conference/participants/", {
+        params: { page, search: query },
       });
 
       // Assuming your API returns { data: [...], totalPages: N }
-      setParticipants(res.data.data || []);
-      setTotalPages(res.data.totalPages || 1);
+      console.log(res.data);
+      setParticipants(res.data.results || []);
+      setTotalPages(res.data.total_pages || 1);
     } catch (error) {
       console.error("Failed to load participants", error);
     } finally {
@@ -223,6 +224,7 @@ export default function RegisteredParticipantsPage() {
       <div className="overflow-x-auto shadow-md rounded-lg bg-white">
         <Table hoverable={true} className="min-w-full text-sm">
           <Table.Head>
+            <Table.HeadCell>Title / Position</Table.HeadCell>
             <Table.HeadCell>Name</Table.HeadCell>
             <Table.HeadCell>Organization</Table.HeadCell>
             <Table.HeadCell>Email</Table.HeadCell>
@@ -236,7 +238,7 @@ export default function RegisteredParticipantsPage() {
           <Table.Body className="divide-y">
             {loading ? (
               <Table.Row>
-                <Table.Cell colSpan={8}>
+                <Table.Cell colSpan={9}>
                   <div className="flex justify-center py-10">
                     <Spinner size="lg" />
                   </div>
@@ -244,7 +246,7 @@ export default function RegisteredParticipantsPage() {
               </Table.Row>
             ) : participants.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={8}>
+                <Table.Cell colSpan={9}>
                   <div className="p-10 text-center text-gray-500">
                     No participants found.
                   </div>
@@ -257,15 +259,24 @@ export default function RegisteredParticipantsPage() {
                   className="bg-white hover:bg-gray-50 transition-all"
                 >
                   <Table.Cell className="font-medium text-gray-900">
+                    {p.title || "N/A"}
+                  </Table.Cell>
+                  <Table.Cell className="font-medium text-gray-900">
                     {p.title ? `${p.title} ` : ""}
                     {p.firstName} {p.lastName}
                   </Table.Cell>
-                  <Table.Cell>{p.organization}</Table.Cell>
-                  <Table.Cell>{p.email}</Table.Cell>
-                  <Table.Cell>{p.phone}</Table.Cell>
-                  <Table.Cell>{p.country}</Table.Cell>
-                  <Table.Cell>{p.participationCategory}</Table.Cell>
-                  <Table.Cell>{p.lipanId ? "Member" : "Non-member"}</Table.Cell>
+                  <Table.Cell>{p.organization || "N/A"}</Table.Cell>
+                  <Table.Cell>{p.email || "N/A"}</Table.Cell>
+                  <Table.Cell>{p.phone || "N/A"}</Table.Cell>
+                  <Table.Cell>{p.country || "N/A"}</Table.Cell>
+                  <Table.Cell>{p.participationCategory || "N/A"}</Table.Cell>
+                  <Table.Cell>
+                    {!p.lipanId
+                      ? "Non-Member"
+                      : p.lipanId === "teacher"
+                      ? "Teacher"
+                      : "Member"}
+                  </Table.Cell>
                   <Table.Cell>
                     <div className="flex gap-3">
                       <Button

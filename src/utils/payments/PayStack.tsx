@@ -15,8 +15,8 @@ const PaystackPayment = ({
   email: string;
   name: string;
   description: string;
-    plan: string;
-    membership: number;
+  plan: string;
+  membership: number;
 }) => {
   const { processPayment, isProcessingPayment } = usePayment();
   const config = {
@@ -26,6 +26,11 @@ const PaystackPayment = ({
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
     metadata: {
       custom_fields: [
+        {
+          display_name: "Purpose",
+          variable_name: "purpose",
+          value: "subscription",
+        },
         { display_name: "Full Name", variable_name: "full_name", value: name },
         {
           display_name: "Payment description",
@@ -57,7 +62,7 @@ const PaystackPayment = ({
       status: ref.status,
       description,
       membership_type: membership,
-      plan
+      plan,
     });
   };
 
@@ -74,7 +79,7 @@ const PaystackPayment = ({
       }}
     >
       {isProcessingPayment ? (
-        <AiOutlineLoading className="animate-spin text-white !m-auto" />
+        <AiOutlineLoading className="animate-spin text-whikte !m-auto" />
       ) : (
         "Continue to pay"
       )}
