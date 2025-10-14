@@ -12,28 +12,31 @@ jobs:
       - name: Checkout frontend code
         uses: actions/checkout@v4
 
+      # ✅ Step 1: Setup pnpm first (installs it properly)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10 # or match your project's version
+          run_install: false
+
+      # ✅ Step 2: Setup Node.js and enable pnpm caching
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
-
-      # ✅ Proper way to install pnpm
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9 # or your project's pnpm version
-          run_install: false
+          cache: 'pnpm'
 
       - name: Create .env.production
         run: |
           echo "${{ secrets.APP_ENV }}" >> .env.production
 
+      # ✅ Step 3: Install and build using pnpm
       - name: Install dependencies & build
         run: |
           pnpm install --frozen-lockfile
           pnpm run build
 
+      # ✅ Step 4: Deploy to cPanel
       - name: Deploy React build to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
