@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, Label, TextInput, Table, Spinner, Card } from "flowbite-react";
 import { FaSearch, FaFilePdf } from "react-icons/fa";
 import axios from "../../../config/axios";
-import CertificatePreview from "../../../components/UI/ConfCertificate";
+import ConfCertificate from "../../../components/UI/ConfCertificate";
 
 interface Participant {
   id: string;
@@ -16,6 +16,17 @@ interface Participant {
   country: string;
 }
 
+const participant: Participant = {
+  id: "1",
+  title: "Dr.",
+  firstName: "Bamidele",
+  lastName: "Aminu",
+  email: "obedaminu303@gmail.com",
+  lipanId: "LIPAN2025-001",
+  organization: "University of Lagos",
+  city: "Lagos",
+  country: "Nigeria",
+};
 export default function CertificateAdminPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,10 +35,12 @@ export default function CertificateAdminPage() {
 
   const handleSearch = async () => {
     if (!query.trim()) return;
+    setParticipants([]);
+    setSelected(null);
     setLoading(true);
     try {
-      const res = await axios.get(`/api/participants/search?query=${query}`);
-      setParticipants(res.data);
+      const res = await axios.get(`/conference/participants/?search=${query}`);
+      setParticipants(res.data.results);
     } catch (err) {
       console.error("Search failed", err);
     } finally {
@@ -44,17 +57,21 @@ export default function CertificateAdminPage() {
       {/* Search Form */}
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="search" value="Search by Email or Lipan ID" />
+          <Label htmlFor="search" value="Search by Name, Email or Lipan ID" />
           <TextInput
             id="search"
             type="text"
-            placeholder="Enter Email or Lipan ID"
+            placeholder="Enter Search here...."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <Button color="blue" onClick={handleSearch} disabled={loading}>
-          {loading ? <Spinner size="sm" /> : <FaSearch className="mr-2" />}
+          {loading ? (
+            <Spinner size="sm" className="mr-2" />
+          ) : (
+            <FaSearch className="mr-2" size={16.5} />
+          )}
           Search
         </Button>
       </div>
@@ -70,7 +87,7 @@ export default function CertificateAdminPage() {
             <Table.HeadCell>Country</Table.HeadCell>
             <Table.HeadCell>Action</Table.HeadCell>
           </Table.Head>
-          <Table.Body>
+          <Table.Body className="divide-y bg-white">
             {participants.map((p) => (
               <Table.Row key={p.id}>
                 <Table.Cell>
@@ -135,7 +152,7 @@ export default function CertificateAdminPage() {
       {/* Certificate Preview (Render only if selected) */}
       {selected && (
         <div className="mt-8">
-          <CertificatePreview participant={selected} />
+          <ConfCertificate participant={selected} />
         </div>
       )}
     </div>

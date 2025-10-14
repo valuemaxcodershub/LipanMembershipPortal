@@ -56,7 +56,7 @@ function AdminLayout() {
       path: "events",
     },
     {
-      name: "Conferences",
+      name: "Conference",
       icon: BiBuilding,
       dropdown: [
         {

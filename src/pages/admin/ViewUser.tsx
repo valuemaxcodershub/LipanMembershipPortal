@@ -36,7 +36,7 @@ const profileSchema = yup.object({
   zip_code: yup.string().nullable(),
   payment_status: yup.string().nullable(),
   payment_method: yup.string().nullable(),
-  plan_type: yup.string().nullable(),
+  plan_type: yup.string().nullable().default("yearly"),
   membership_type: yup.string().nullable(),
 });
 

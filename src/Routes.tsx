@@ -50,6 +50,7 @@ import RegistrationSuccess from "./pages/main/ConferenceRegistrationSuccess";
 import TeacherRegistrationPage from "./pages/main/TeacherConferenceRegister";
 import ConferenceLayout from "./layouts/ConferenceLayout";
 import RegisteredParticipantsPage from "./pages/admin/conferences/RegisteredParticipants";
+import CertificateAdminPage from "./pages/admin/conferences/ConfCertificate";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -156,7 +157,7 @@ function AppRoutes() {
         />
 
         <Route path="conference/participants" element={<RegisteredParticipantsPage />} />
-        <Route path="conference/certificates" element={<div>Certificates</div>} />
+        <Route path="conference/certificates" element={<CertificateAdminPage/>} />
 
         <Route path="manage-journals" element={<ManageJournalsPage />} />
         <Route

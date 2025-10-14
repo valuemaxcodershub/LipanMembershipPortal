@@ -41,3 +41,33 @@ export function useDownloadFile() {
 
   return { downloadFile, progress, downloading };
 }
+
+
+ export async function checkCode(
+  id: string
+): Promise<{ valid: boolean; message: string } | undefined> {
+  const pattern = /^Li\d{4}PAN$/;
+  if (!pattern.test(id)) {
+    return {
+      valid: false,
+      message: "❌ Invalid ID Provided.",
+    };
+  }
+
+  // Simulate API call to validate the code
+  try {
+    await axios.post("/accounts/user/verify-id/", { lipan_id: id });
+    return {
+      valid: true,
+      message: "✅ ID validated successfully.",
+    };
+  } catch (err: any) {
+    console.error(err);
+    return {
+      valid: false,
+      message:
+        err?.response?.data?.message ||
+        "❌ Error validating ID. Please try again later.",
+    };
+  }
+}

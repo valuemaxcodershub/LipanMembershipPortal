@@ -33,6 +33,7 @@ import countryData from "../../data.json";
 import axios from "../../config/axios";
 import { toast } from "react-toastify";
 import { usePayment } from "../../hooks/payment";
+import { checkCode } from "../../utils/api/download";
 
 // ----------------------
 // Validation Schema (Yup)
@@ -77,34 +78,7 @@ const presentationTypes = [
   "Exhibitions",
 ];
 
-async function checkCode(
-  id: string
-): Promise<{ valid: boolean; message: string } | undefined> {
-  const pattern = /^Li\d{4}PAN$/;
-  if (!pattern.test(id)) {
-    return {
-      valid: false,
-      message: "❌ Invalid ID Provided.",
-    };
-  }
 
-  // Simulate API call to validate the code
-  try {
-    await axios.post("/accounts/user/verify-id/", { lipan_id: id });
-    return {
-      valid: true,
-      message: "✅ ID validated successfully.",
-    };
-  } catch (err: any) {
-    console.error(err);
-    return {
-      valid: false,
-      message:
-        err?.response?.data?.message ||
-        "❌ Error validating ID. Please try again later.",
-    };
-  }
-}
 
 export default function RegistrationPage() {
   const {

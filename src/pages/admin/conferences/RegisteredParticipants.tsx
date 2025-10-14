@@ -3,6 +3,8 @@ import { Table, Button, Spinner, TextInput, Pagination } from "flowbite-react";
 import { FiTrash2, FiEye, FiPlus, FiSearch } from "react-icons/fi";
 import axios from "../../../config/axios";
 import AddParticipantModal from "../../../components/UI/AddParticipantModal";
+import { toast } from "react-toastify";
+import axiosMain from "axios";
 
 const mockParticipants = [
   {
@@ -125,8 +127,7 @@ interface Participant {
 }
 
 export default function RegisteredParticipantsPage() {
-  const [participants, setParticipants] =
-    useState<Participant[]>(mockParticipants);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,7 +172,7 @@ export default function RegisteredParticipantsPage() {
       return;
     try {
       setBusyId(id);
-      await axios.delete(`/api/participants/${id}`);
+      await axios.delete(`/conference/participants/${id}/`);
       setParticipants((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Delete failed", err);
@@ -181,27 +182,33 @@ export default function RegisteredParticipantsPage() {
   };
 
   const handleAdd = async (formData: any) => {
-    // Call your API here
-    console.log("New Participant:", formData);
-    // await axios.post("/api/participants", formData);
+    try {
+      await axiosMain.post(
+        `${import.meta.env.VITE_OTHER_API_URL}/api/conference`,
+        formData
+      );
+      toast.success("New Participant added successfully");
+      fetchParticipants();
+    } catch (err) {
+      toast.error("Ooops, there was an error, pls try again");
+    }
   };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
+      <h1 className="text-2xl font-semibold text-gray-800">
+        Registered Participants
+      </h1>
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Registered Participants
-        </h1>
-
         {/* Search form */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <TextInput
             icon={FiSearch}
-            placeholder="Search by name, email, or organization..."
+            placeholder="Search by name, email, or LiPAN ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
+            className="w-64 md:w-80"
           />
           <Button type="submit" color="blue">
             Search
@@ -279,13 +286,13 @@ export default function RegisteredParticipantsPage() {
                   </Table.Cell>
                   <Table.Cell>
                     <div className="flex gap-3">
-                      <Button
+                      {/* <Button
                         color="light"
                         size="xs"
                         className="flex items-center gap-1 text-blue-600"
                       >
                         <FiEye />
-                      </Button>
+                      </Button> */}
                       <Button
                         color="failure"
                         size="xs"
