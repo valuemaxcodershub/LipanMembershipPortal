@@ -18,8 +18,12 @@ jobs:
           node-version: 22
           cache: "pnpm"
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      # ✅ Proper way to install pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9 # or your project's pnpm version
+          run_install: false
 
       - name: Create .env.production
         run: |
