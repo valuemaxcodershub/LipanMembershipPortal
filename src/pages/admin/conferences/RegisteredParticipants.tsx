@@ -218,7 +218,7 @@ export default function RegisteredParticipantsPage() {
         {/* Add button */}
         <Button
           onClick={() => setOpen(true)}
-          color="success"
+          color="blue"
           size="sm"
           className="flex items-center gap-2"
         >
@@ -269,7 +269,6 @@ export default function RegisteredParticipantsPage() {
                     {p.title || "N/A"}
                   </Table.Cell>
                   <Table.Cell className="font-medium text-gray-900">
-                    {p.title ? `${p.title} ` : ""}
                     {p.firstName} {p.lastName}
                   </Table.Cell>
                   <Table.Cell>{p.organization || "N/A"}</Table.Cell>

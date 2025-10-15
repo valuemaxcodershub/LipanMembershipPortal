@@ -32,6 +32,7 @@ export default function CertificateAdminPage() {
   const [loading, setLoading] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [selected, setSelected] = useState<Participant | null>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -78,54 +79,60 @@ export default function CertificateAdminPage() {
 
       {/* Search Results */}
       {participants.length > 0 && (
-        <Table hoverable>
-          <Table.Head>
-            <Table.HeadCell>Name</Table.HeadCell>
-            <Table.HeadCell>Email</Table.HeadCell>
-            <Table.HeadCell>Lipan ID</Table.HeadCell>
-            <Table.HeadCell>Organization</Table.HeadCell>
-            <Table.HeadCell>Country</Table.HeadCell>
-            <Table.HeadCell>Action</Table.HeadCell>
-          </Table.Head>
-          <Table.Body className="divide-y bg-white">
-            {participants.map((p) => (
-              <Table.Row key={p.id}>
-                <Table.Cell>
-                  {p.title} {p.firstName} {p.lastName}
-                </Table.Cell>
-                <Table.Cell>{p.email}</Table.Cell>
-                <Table.Cell>{p.lipanId}</Table.Cell>
-                <Table.Cell>{p.organization}</Table.Cell>
-                <Table.Cell>{p.country}</Table.Cell>
-                <Table.Cell>
-                  <Button
-                    color="success"
-                    size="xs"
-                    onClick={() => setSelected(p)}
-                  >
-                    Select
-                  </Button>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table hoverable>
+            <Table.Head>
+              <Table.HeadCell>Title / Position</Table.HeadCell>
+              <Table.HeadCell>Name</Table.HeadCell>
+              <Table.HeadCell>Email</Table.HeadCell>
+              <Table.HeadCell>Lipan ID</Table.HeadCell>
+              <Table.HeadCell>Organization</Table.HeadCell>
+              <Table.HeadCell>Country</Table.HeadCell>
+              <Table.HeadCell>Action</Table.HeadCell>
+            </Table.Head>
+            <Table.Body className="divide-y bg-white">
+              {participants.map((p) => (
+                <Table.Row key={p.id}>
+                  <Table.Cell>{p.title}</Table.Cell>
+                  <Table.Cell>
+                    {p.firstName} {p.lastName}
+                  </Table.Cell>
+                  <Table.Cell>{p.email}</Table.Cell>
+                  <Table.Cell>{p.lipanId}</Table.Cell>
+                  <Table.Cell>{p.organization}</Table.Cell>
+                  <Table.Cell>{p.country}</Table.Cell>
+                  <Table.Cell>
+                    <Button
+                      color="success"
+                      size="xs"
+                      onClick={() => setSelected(p)}
+                    >
+                      Select
+                    </Button>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        </div>
       )}
 
       {/* Selected Participant Details */}
       {selected && (
         <Card className="mt-6 shadow-lg border">
           <h2 className="text-xl font-semibold mb-3">Participant Details</h2>
-          <div className="grid grid-cols-2 gap-y-2 text-gray-700">
+          <div className="grid md:grid-cols-2 gap-y-2 text-gray-700">
             <p>
               <b>Name:</b> {selected.firstName} {selected.lastName}
             </p>
             <p>
               <b>Email:</b> {selected.email}
             </p>
-            <p>
-              <b>Lipan ID:</b> {selected.lipanId}
-            </p>
+            {selected.lipanId && (
+              <p>
+                <b>Lipan ID:</b> {selected.lipanId}
+              </p>
+            )}
             <p>
               <b>Organization:</b> {selected.organization}
             </p>
@@ -135,13 +142,19 @@ export default function CertificateAdminPage() {
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button color="red" onClick={() => setSelected(null)}>
+            <Button
+              color="red"
+              onClick={() => {
+                setSelected(null);
+                setShowPreview(false);
+              }}
+            >
               Cancel
             </Button>
             <Button
               color="blue"
               className="ml-3 flex items-center"
-              onClick={() => alert("Generate Certificate")}
+              onClick={() => setShowPreview(true)}
             >
               <FaFilePdf className="mr-2" /> Generate Certificate
             </Button>
@@ -150,9 +163,9 @@ export default function CertificateAdminPage() {
       )}
 
       {/* Certificate Preview (Render only if selected) */}
-      {selected && (
+      {showPreview && (
         <div className="mt-8">
-          <ConfCertificate participant={selected} />
+          <ConfCertificate participant={selected as Participant} />
         </div>
       )}
     </div>

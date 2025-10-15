@@ -134,7 +134,8 @@ export default function ConfCertificate({
             style={{ wordSpacing: "10px", letterSpacing: "4px" }}
             className="absolute top-[322px] left-1/2 transform -translate-x-1/2 text-center text-[2rem] font-semibold text-black font-Ditty"
           >
-            {participant.firstName} {participant.lastName}
+            {participant.firstName.split(" ")[0]}{" "}
+            {participant.lastName.split(" ")[0]}
           </div>
 
           {/* Optional Presentation Title */}
@@ -147,7 +148,7 @@ export default function ConfCertificate({
       </div>
 
       {/* Download button */}
-      <div className="flex items-center justify-start gap-3 mt-6">
+      <div className="flex flex-col sm:flex-row items-center justify-start gap-3 mt-6">
         {/* add icons to thses buttons */}
 
         <Button
@@ -160,7 +161,7 @@ export default function ConfCertificate({
             <Spinner size="sm" />
           ) : (
             <>
-              <BiDownload className="mr-2" size={24} />
+              <BiDownload className="mr-2 h-5" size={24} />
               <span>Download Certificate</span>
             </>
           )}
@@ -170,14 +171,15 @@ export default function ConfCertificate({
         <Button
           onClick={sendEmailToParticipant}
           disabled={isSending}
-          color="green"
+          color="blue"
           className="mt-5"
+          outline
         >
           {isSending ? (
             <Spinner size="sm" />
           ) : (
             <>
-              <BiMailSend className="mr-2" size={24} />
+              <BiMailSend className="mr-2 h-5" size={24} />
               <span>Email Certificate to Participant</span>
             </>
           )}
