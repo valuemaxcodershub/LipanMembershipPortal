@@ -6,7 +6,7 @@ export const maskMail = (mail: string) => {
 };
 
 export const getInitails = (name: string) => {
-  const initials = name.split(" ");
+  const initials = name.split("");
   if (initials.length === 1) {
     return initials[0][0].toUpperCase();
   }

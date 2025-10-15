@@ -43,6 +43,7 @@ import { useAuth } from "../../hooks/auth";
 type User = {
   id: number;
   full_name: string;
+  first_name: string;
   email: string;
   membership_type: string;
   lipan_id: string;
@@ -460,7 +461,7 @@ const UserManagementPage = () => {
                           : undefined
                       }
                       placeholderInitials={
-                        user?.full_name ? getInitails(user?.full_name) : "- -"
+                        user?.first_name ? getInitails(user?.first_name) : "- -"
                       }
                       size="sm"
                       bordered
