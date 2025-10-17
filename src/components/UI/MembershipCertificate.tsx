@@ -118,7 +118,7 @@ export default function Certificate({ memberId }: CertificateProps) {
         >
           {/* Full Name */}
           <div
-            className="absolute font-dancing-script text-[36px] font-bold text-black"
+            className="absolute font-Ditty text-[36px] font-bold text-black"
             style={{
               top: "200px",
               left: "210px",
