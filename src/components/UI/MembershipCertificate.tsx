@@ -120,8 +120,10 @@ export default function Certificate({ memberId }: CertificateProps) {
           <div
             className="absolute font-Ditty text-[36px] font-bold text-black"
             style={{
-              top: "200px",
-              left: "210px",
+              top: "197px",
+              left: "320px",
+              wordSpacing: "10px", 
+              letterSpacing: "11px"
             }}
           >
             {member?.full_name?.toUpperCase()}

@@ -32,7 +32,7 @@ export default function ConfCertificate({
       scrollY: 0,
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/png", 0.4);
     const { width: canvasWidth, height: canvasHeight } = canvas;
 
     const pdf = new jsPDF({
@@ -91,8 +91,14 @@ export default function ConfCertificate({
 
       const filename = `${participant.firstName}_${participant.lastName}_Certificate.pdf`;
 
+      // ✅ Convert Blob to File
+      const file = new File([blobToSend], filename, {
+        type: blobToSend.type || "application/pdf",
+      });
+      console.log(file)
+      // ✅ Append File to FormData
       const formData = new FormData();
-      formData.append("certificate", blobToSend as Blob, filename);
+      formData.append("certificate", file);
       formData.append(
         "name",
         participant.firstName + " " + participant.lastName
@@ -132,7 +138,7 @@ export default function ConfCertificate({
           {/* Participant Name */}
           <div
             style={{ wordSpacing: "10px", letterSpacing: "4px" }}
-            className="absolute top-[322px] left-1/2 transform -translate-x-1/2 text-center text-[2rem] font-semibold text-black font-Ditty"
+            className="absolute top-[325px] left-1/2 transform -translate-x-1/2 text-center text-[1.8rem] font-semibold text-black font-Ditty"
           >
             {participant.firstName.split(" ")[0]}{" "}
             {participant.lastName.split(" ")[0]}
@@ -168,7 +174,7 @@ export default function ConfCertificate({
         </Button>
 
         {/* Email button */}
-        <Button
+        {/* <Button
           onClick={sendEmailToParticipant}
           disabled={isSending}
           color="blue"
@@ -183,7 +189,7 @@ export default function ConfCertificate({
               <span>Email Certificate to Participant</span>
             </>
           )}
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

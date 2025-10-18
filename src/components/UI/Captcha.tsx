@@ -21,8 +21,10 @@ const Captcha = forwardRef<CaptchaRef, CaptchaProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const generateCaptcha = () => {
+      // const chars =
+      //   "stuvwABCD567EFGHJKLMabcdefghijkNPQRSTUV234WXYZlmnopqrxyz189";
       const chars =
-        "stuvwABCD567EFGHJKLMabcdefghijkNPQRSTUV234WXYZlmnopqrxyz189";
+        "9456721308";
       let result = "";
       for (let i = 0; i < length; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));

@@ -141,7 +141,7 @@ export default function CertificateAdminPage() {
             </p>
           </div>
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-col md:flex-row justify-end">
             <Button
               color="red"
               onClick={() => {
