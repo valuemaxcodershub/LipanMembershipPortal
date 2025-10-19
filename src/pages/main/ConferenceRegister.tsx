@@ -78,8 +78,6 @@ const presentationTypes = [
   "Exhibitions",
 ];
 
-
-
 export default function RegistrationPage() {
   const {
     register,
@@ -779,7 +777,12 @@ export default function RegistrationPage() {
 
                           {/* Pay Button */}
                           <Button
-                            onClick={initializeRegister}
+                            // onClick={initializeRegister}
+                            onClick={() =>
+                              toast.info(
+                                "Sorry Registeration is not avaliable at the moment"
+                              )
+                            }
                             gradientDuoTone="purpleToBlue"
                             size="md"
                             type="button"
