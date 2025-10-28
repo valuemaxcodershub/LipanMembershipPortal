@@ -3,9 +3,10 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Button, Spinner } from "flowbite-react";
 import certTemplate from "../../assets/conf-cert-template.jpeg"; // rename your uploaded file accordingly
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-toastify";
 import { BiDownload, BiMailSend } from "react-icons/bi";
+import axios from "../../config/axios";
 
 interface CertificatePreviewProps {
   participant: {
@@ -26,13 +27,16 @@ export default function ConfCertificate({
 
   const createCertificatePDF = async () => {
     const element = ref.current as HTMLDivElement;
+
+    // ↓ Lower scale from 3 to around 1.5 or 2
     const canvas = await html2canvas(element, {
-      scale: 3,
+      scale: 1.5,
       useCORS: true,
       scrollY: 0,
     });
 
-    const imgData = canvas.toDataURL("image/png", 0.4);
+    // ↓ Use JPEG instead of PNG, and set quality (0.7 is good)
+    const imgData = canvas.toDataURL("image/jpeg", 0.7);
     const { width: canvasWidth, height: canvasHeight } = canvas;
 
     const pdf = new jsPDF({
@@ -51,7 +55,8 @@ export default function ConfCertificate({
     const x = (pageWidth - imgWidth) / 2;
     const y = (pageHeight - imgHeight) / 2;
 
-    pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+    // ↓ Use JPEG instead of PNG
+    pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
 
     return pdf;
   };
@@ -95,7 +100,7 @@ export default function ConfCertificate({
       const file = new File([blobToSend], filename, {
         type: blobToSend.type || "application/pdf",
       });
-      console.log(file)
+      console.log(file);
       // ✅ Append File to FormData
       const formData = new FormData();
       formData.append("certificate", file);
@@ -104,12 +109,12 @@ export default function ConfCertificate({
         participant.firstName + " " + participant.lastName
       );
       formData.append("email", participant.email);
-      formData.append("conferenceName", "Pan African literacy for all (PALFA)");
-
-      await axios.post(
-        `${import.meta.env.VITE_OTHER_API_URL}/api/send-certificate`,
-        formData
+      formData.append(
+        "conference_name",
+        "Pan African literacy for all (PALFA)"
       );
+
+      await axios.post("/conference/send-certificate/", formData);
 
       toast.success("Certificate sent successfully!");
     } catch (err) {
@@ -174,7 +179,7 @@ export default function ConfCertificate({
         </Button>
 
         {/* Email button */}
-        {/* <Button
+        <Button
           onClick={sendEmailToParticipant}
           disabled={isSending}
           color="blue"
@@ -189,7 +194,7 @@ export default function ConfCertificate({
               <span>Email Certificate to Participant</span>
             </>
           )}
-        </Button> */}
+        </Button>
       </div>
     </div>
   );
