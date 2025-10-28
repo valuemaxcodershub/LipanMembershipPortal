@@ -6,7 +6,8 @@ import certTemplate from "../../assets/conf-cert-template.jpeg"; // rename your 
 // import axios from "axios";
 import { toast } from "react-toastify";
 import { BiDownload, BiMailSend } from "react-icons/bi";
-import axios from "../../config/axios";
+import axios from "axios";
+// import axios from "../../config/axios";
 
 interface CertificatePreviewProps {
   participant: {
@@ -110,11 +111,15 @@ export default function ConfCertificate({
       );
       formData.append("email", participant.email);
       formData.append(
-        "conference_name",
+        "conferenceName",
         "Pan African literacy for all (PALFA)"
       );
 
-      await axios.post("/conference/send-certificate/", formData);
+      // await axios.post("/conference/send-certificate/", formData);
+      await axios.post(
+        `${import.meta.env.VITE_OTHER_API_URL}/api/send-certificate`,
+        formData
+      );
 
       toast.success("Certificate sent successfully!");
     } catch (err) {
