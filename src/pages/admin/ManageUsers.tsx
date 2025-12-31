@@ -15,7 +15,7 @@ import {
   Tabs,
   TabItem,
 } from "flowbite-react";
-import { HiSearch } from "react-icons/hi";
+import { HiDownload, HiSearch } from "react-icons/hi";
 import {
   FaEye,
   FaTrash,
@@ -83,6 +83,9 @@ const UserManagementPage = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [openExportModal, setOpenExportModal] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
   const membership_type = searchParams.get("membership_type") || "";
@@ -133,24 +136,84 @@ const UserManagementPage = () => {
       .catch((error) => console.error("Error fetching states:", error));
   }, []);
 
+  // Export form (no validation needed, all optional)
+  const {
+    register: registerExport,
+    handleSubmit: handleExportSubmit,
+    watch: watchExport,
+    reset: resetExport,
+    setValue: setExportValue,
+  } = useForm({
+    defaultValues: {
+      state: "",
+      lga: "",
+      gender: "",
+    },
+  });
+
+  const exportState = watchExport("state");
+
+  // Update LGAs when export state changes (reuse same states/lgas data)
   useEffect(() => {
-    if (stateFilter) {
-      fetch(`https://nga-states-lga.onrender.com/?state=${stateFilter}`)
+    if (exportState) {
+      fetch(`https://nga-states-lga.onrender.com/?state=${exportState}`)
         .then((response) => response.json())
         .then((data) => {
           setLgas(data);
-          if (!data.includes(lgaFilter)) {
-            setLgaFilter("");
-            updateParams({ lga: "" });
+          // if current lga not in new list → clear it
+          if (watchExport("lga") && !data.includes(watchExport("lga"))) {
+            setExportValue("lga", "");
           }
         })
         .catch((error) => console.error("Error fetching LGAs:", error));
     } else {
       setLgas([]);
-      setLgaFilter("");
-      updateParams({ lga: "" });
+      setExportValue("lga", "");
     }
-  }, [stateFilter]);
+  }, [exportState, setExportValue, watchExport]);
+
+  // EXPORT FUNCTION
+  const onExport = async (data: any) => {
+    setExportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (data.state) params.append("state", data.state);
+      if (data.lga) params.append("lga", data.lga);
+      if (data.gender) params.append("gender", data.gender);
+
+      const response = await axios.get("/accounts/export-users/", {
+        params,
+        responseType: "blob", // important for file download
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Extract filename from header or fallback
+      // const contentDisposition = response.headers["content-disposition"];
+      let filename = "users_export.xlsx";
+      // if (contentDisposition) {
+      //   const match = contentDisposition.match(/filename="(.+)"/);
+      //   if (match?.[1]) filename = match[1];
+      // }
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Users exported successfully!");
+      setOpenExportModal(false);
+      resetExport();
+    } catch (err: any) {
+      const errMsg = errorHandler(err);
+      toast.error(errMsg || "Failed to export users. Please try again.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -244,7 +307,9 @@ const UserManagementPage = () => {
         } else if (confirmAction.type === "statusChange") {
           await axios.patch(url, { is_active: !user.is_active });
           toast.success(
-            `User "${user.full_name}" ${user.is_active ? "suspended" : "activated"} successfully!`
+            `User "${user.full_name}" ${
+              user.is_active ? "suspended" : "activated"
+            } successfully!`
           );
         }
         fetchUsers();
@@ -294,6 +359,14 @@ const UserManagementPage = () => {
               <FaRedo className="text-blue-600" />
             </Button>
           </Tooltip>
+          {/* NEW EXPORT BUTTON */}
+          <Button
+            disabled={loading}
+            color="success"
+            onClick={() => setOpenExportModal(true)}
+          >
+            <HiDownload className="mr-2 h-5 w-5" /> Export Users
+          </Button>
           <Button
             disabled={loading}
             color="blue"
@@ -515,7 +588,9 @@ const UserManagementPage = () => {
                         color="blue"
                         className="!w-fit"
                         as={Link}
-                        to={`/admin/manage-users/${user.id}/${user.is_staff ? "admins" : "users"}/view`}
+                        to={`/admin/manage-users/${user.id}/${
+                          user.is_staff ? "admins" : "users"
+                        }/view`}
                       >
                         <FaEye className="h-5" />
                       </Button>
@@ -690,10 +765,16 @@ const UserManagementPage = () => {
                   value={watch("is_staff")}
                   renderItem={(item: any, isSelected) => (
                     <div
-                      className={`w-[90px] rounded-md cursor-pointer bg-gray-200 dark:bg-gray-800 p-3 ${isSelected ? "border-2 border-blue-600 !text-blue-600" : "border"}`}
+                      className={`w-[90px] rounded-md cursor-pointer bg-gray-200 dark:bg-gray-800 p-3 ${
+                        isSelected
+                          ? "border-2 border-blue-600 !text-blue-600"
+                          : "border"
+                      }`}
                     >
                       <div
-                        className={`text-4xl ${isSelected ? "text-blue-600" : "text-gray-500"} m-auto w-fit`}
+                        className={`text-4xl ${
+                          isSelected ? "text-blue-600" : "text-gray-500"
+                        } m-auto w-fit`}
                       >
                         {item.icon}
                       </div>
@@ -740,15 +821,15 @@ const UserManagementPage = () => {
           confirmAction?.type === "delete"
             ? "Delete User?"
             : confirmAction?.user.is_active
-              ? "Suspend User"
-              : "Unsuspend User"
+            ? "Suspend User"
+            : "Unsuspend User"
         }
         message={`Are you sure you want to ${
           confirmAction?.type === "delete"
             ? "delete"
             : confirmAction?.user.is_active
-              ? "suspend"
-              : "unsuspend"
+            ? "suspend"
+            : "unsuspend"
         } ${confirmAction?.user.full_name}?`}
         theme={
           confirmAction?.type === "statusChange" &&
@@ -757,6 +838,90 @@ const UserManagementPage = () => {
             : "failure"
         }
       />
+
+      {/* Export Users Modal */}
+      <Modal
+        show={openExportModal}
+        onClose={() => !exportLoading && setOpenExportModal(false)}
+      >
+        <Modal.Header>Export Users to Excel</Modal.Header>
+        <Modal.Body>
+          <form className="space-y-6" onSubmit={handleExportSubmit(onExport)}>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Select optional filters to narrow down the exported data. Leave
+              blank to export all users.
+            </p>
+
+            <div>
+              <Label htmlFor="export-state" value="State" />
+              <Select
+                id="export-state"
+                {...registerExport("state")}
+                disabled={exportLoading}
+              >
+                <option value="">All States</option>
+                {states.map((state, index) => (
+                  <option key={index} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="export-lga" value="LGA" />
+              <Select
+                id="export-lga"
+                {...registerExport("lga")}
+                disabled={exportLoading || !exportState}
+              >
+                <option value="">All LGAs</option>
+                {lgas.map((lga, index) => (
+                  <option key={index} value={lga}>
+                    {lga}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="export-gender" value="Gender" />
+              <Select
+                id="export-gender"
+                {...registerExport("gender")}
+                disabled={exportLoading}
+              >
+                <option value="">All Genders</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                color="gray"
+                type="button"
+                onClick={() => {
+                  setOpenExportModal(false);
+                  resetExport();
+                }}
+                disabled={exportLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                color="success"
+                isProcessing={exportLoading}
+                disabled={exportLoading}
+              >
+                <HiDownload className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };
