@@ -1,58 +1,63 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Spinner, Button } from "flowbite-react";
 import axios from "axios";
-import { FaCheckCircle, FaRedo, FaShieldAlt } from "react-icons/fa";
+import { FaRedo, FaShieldAlt } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
+import { buildConferencePayload } from "../../utils/conferencePayload";
 
 export default function PaymentProcessingModal({
   isOpen,
   onClose,
   transactionData,
+  lipanId = "",
 }: {
   isOpen: boolean;
   onClose: () => void;
   transactionData: any;
-  }) {
-  const navigate = useNavigate()
-  const {pathname} = useLocation()
+  lipanId?: string;
+}) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [failed, setFailed] = useState(false);
 
   const sendTransaction = async (data: any) => {
     setIsSubmitting(true);
     try {
-      // 🚨 Replace with your API route
+      const payload = buildConferencePayload(data, {
+        lipanId,
+        paymentMethod: "paystack",
+      });
+
       await axios.post(
         `${import.meta.env.VITE_OTHER_API_URL}/api/conference`,
-        data
+        payload
       );
 
-      // ✅ success: clear saved transaction
       localStorage.removeItem("pendingTransaction");
       setFailed(false);
 
-      // auto-close modal after success
       setTimeout(() => {
         onClose();
         navigate(`/conference/register/success?callbackUrl=${pathname}`);
       }, 2000);
     } catch (err) {
       console.error("Error submitting payment:", err);
-
-      // ❌ failed: save in localStorages
       localStorage.setItem("pendingTransaction", JSON.stringify(data));
       setFailed(true);
     } finally {
       setIsSubmitting(false);
     }
   };
+
   useEffect(() => {
     if (isOpen && transactionData) {
       sendTransaction(transactionData);
     }
-  }, [isOpen, transactionData, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, transactionData]);
 
   const retry = () => {
     const savedData = JSON.parse(
@@ -68,18 +73,18 @@ export default function PaymentProcessingModal({
       show={isOpen}
       size="md"
       popup
-      onClose={() => {}} // 🚫 prevent dismiss
+      onClose={() => {}}
       dismissible={false}
     >
       <Modal.Body>
-        <div className="flex flex-col items-center justify-center text-center py-6">
-          <div className="relative w-20 h-20 mb-4">
-            <FaShieldAlt className="w-20 h-20 text-blue-600 absolute inset-0" />
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <div className="relative mb-4 h-20 w-20">
+            <FaShieldAlt className="absolute inset-0 h-20 w-20 text-[#5b5fc7]" />
           </div>
 
-          <h3 className="text-lg font-semibold mb-2">Payment Successful</h3>
+          <h3 className="mb-2 text-lg font-semibold">Payment Successful</h3>
           {isSubmitting ? (
-            <p className="text-gray-500 flex justify-center gap-3">
+            <p className="flex justify-center gap-3 text-gray-500">
               <Spinner aria-label="Submitting" size="md" />
               Submitting request now. Please wait...
             </p>
@@ -94,7 +99,7 @@ export default function PaymentProcessingModal({
                 outline
                 className="!mx-auto !w-full mt-3"
               >
-                Retry <FaRedo className="h-5 ml-3" />
+                Retry <FaRedo className="ml-3 h-5" />
               </Button>
             </>
           ) : (
