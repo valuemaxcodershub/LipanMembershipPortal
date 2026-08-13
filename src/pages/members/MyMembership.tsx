@@ -204,7 +204,10 @@ const MyMembershipPage = () => {
                   onClick={openMembershipModal}
                   className="flex items-center gap-2"
                 >
-                  Change Membership <FiArrowUpRight className="h-4 w-4" />
+                  {pageDetails.isMembershipActive
+                    ? "Change Membership"
+                    : "Renew Membership"}{" "}
+                  <FiArrowUpRight className="h-4 w-4" />
                 </Button>
               </div>
             </Card>

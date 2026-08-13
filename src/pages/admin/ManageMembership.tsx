@@ -32,7 +32,12 @@ const membershipSchema = yup.object({
   price: yup
     .number()
     .typeError("Price must be a number")
-    .required("Price is required"),
+    .required("Registration price is required"),
+  renewal_price: yup
+    .number()
+    .typeError("Renewal price must be a number")
+    .required("Renewal price is required")
+    .min(0, "Renewal price cannot be negative"),
   benefits: yup.array().min(1, "At least one benefit is required"),
   permissions: yup.array().min(1, "At least one benefit is required"),
 });
@@ -67,6 +72,7 @@ export default function MembershipCreateEditPage() {
       name: "",
       description: "",
       price: 0,
+      renewal_price: 0,
       benefits: [],
       permissions: [],
     },
@@ -88,6 +94,8 @@ export default function MembershipCreateEditPage() {
             name: data.name,
             description: data.description,
             price: data.price,
+            renewal_price:
+              data.renewal_price != null ? Number(data.renewal_price) : Number(data.price),
             benefits: data.benefits.map((b: any) => b.id),
             permissions: data.permissions.map((p: any) => p.key),
           });
@@ -136,6 +144,7 @@ export default function MembershipCreateEditPage() {
           name: "",
           description: "",
           price: 0,
+          renewal_price: 0,
           permissions: [],
         });
         navigate("/admin/memberships");
@@ -189,18 +198,36 @@ export default function MembershipCreateEditPage() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="price" value="Price (₦)" />
-            <TextInput
-              icon={FaMoneyBillWave}
-              id="price"
-              type="number"
-              placeholder="Enter price in Naira"
-              {...register("price")}
-              color={errors.price ? "failure" : undefined}
-              helperText={errors.price?.message}
-              disabled={isSubmitting}
-            />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="price" value="Registration Price (₦)" />
+              <TextInput
+                icon={FaMoneyBillWave}
+                id="price"
+                type="number"
+                placeholder="First-time registration fee"
+                {...register("price")}
+                color={errors.price ? "failure" : undefined}
+                helperText={errors.price?.message}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="renewal_price" value="Renewal Price (₦)" />
+              <TextInput
+                icon={FaMoneyBillWave}
+                id="renewal_price"
+                type="number"
+                placeholder="Fee when membership expires and is renewed"
+                {...register("renewal_price")}
+                color={errors.renewal_price ? "failure" : undefined}
+                helperText={
+                  errors.renewal_price?.message ||
+                  "Charged when an expired member renews this plan."
+                }
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -152,7 +152,7 @@ const AdminLoginPage = () => {
             </div>
             <Label value="Enter CAPTCHA" />
             <TextInput
-              placeholder="Type the characters you see above"
+              placeholder="Type the numbers you see above"
               disabled={isSubmitting}
               color={captchaError ? "failure" : "gray"}
               value={captchaInput}

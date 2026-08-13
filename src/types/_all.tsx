@@ -2,6 +2,7 @@ export interface MembershipPlan {
   id: number;
   name: string;
   price: number;
+  renewal_price?: number;
   permissions: any[];
 }
 
@@ -9,6 +10,8 @@ export type Transaction = {
   id: string;
   amount: string;
   created_at: string;
+  date?: string;
+  time?: string;
   description: string;
   payment_method: string;
   status: string;

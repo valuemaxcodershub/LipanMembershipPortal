@@ -127,7 +127,7 @@ function SignInPage() {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
         <div className="bg-blue-700 p-3 rounded-xl h-20 my-6">
           <Logo className="h-full" />
         </div>{" "}
@@ -199,7 +199,7 @@ function SignInPage() {
               </div>
               <Label value="Enter CAPTCHA" />
               <TextInput
-                placeholder="Type the characters you see above"
+                placeholder="Type the numbers you see above"
                 disabled={loading}
                 color={captchaError ? "failure" : "gray"}
                 value={captchaInput}

@@ -4,8 +4,9 @@ type FormQuestionCardProps = {
   number: number;
   title: string;
   required?: boolean;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
+  className?: string;
   children: ReactNode;
 };
 
@@ -15,10 +16,11 @@ export default function FormQuestionCard({
   required = true,
   hint,
   error,
+  className = "",
   children,
 }: FormQuestionCardProps) {
   return (
-    <section className="ms-form-card rounded-xl bg-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+    <section className={`ms-form-card rounded-xl px-5 py-5 shadow-[0_1.6px_3.6px_rgba(0,0,0,0.13)] sm:px-6 sm:py-6 ${className}`}>
       <h3 className="text-[15px] font-semibold leading-snug text-[#242424] sm:text-base">
         <span className="mr-1.5 text-[#5b5fc7]">{number}.</span>
         {title}

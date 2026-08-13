@@ -5,12 +5,16 @@ export const maskMail = (mail: string) => {
   return `${maskedLocalPart}@${domain}`;
 };
 
-export const getInitails = (name: string) => {
-  const initials = name.split(" ");
-  if (initials.length === 1) {
-    return initials[0][0].toUpperCase();
+export const getInitails = (name?: string | null) => {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return "—";
+  if (parts.length === 1) {
+    return (parts[0][0] || "?").toUpperCase();
   }
-  return `${initials[0][0].toUpperCase()}${initials[1][0].toUpperCase()}`;
+  return `${(parts[0][0] || "?").toUpperCase()}${(parts[1][0] || "?").toUpperCase()}`;
 };
 
 export const dataUrlToFile = (dataUrl: string, filename: string) => {

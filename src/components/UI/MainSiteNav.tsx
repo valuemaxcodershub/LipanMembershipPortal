@@ -34,7 +34,7 @@ const NavigationBar = () => {
           About Us
         </Navbar.Link>
         <Navbar.Link
-          href="https://lipanonline.org/conferences"
+          href="https://lipanonline.org/conference/"
           target="_blank"
           className="text-white hover:text-blue-400"
         >

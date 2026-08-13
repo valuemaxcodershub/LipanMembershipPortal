@@ -1,17 +1,21 @@
-import { useRef, useState } from "react";
-import { Button, Label, Radio, TextInput, Select } from "flowbite-react";
-import { HiOutlineCreditCard } from "react-icons/hi";
+import { useEffect, useRef, useState } from "react";
+import { Button, Label } from "flowbite-react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { usePaystackPayment } from "react-paystack";
-import PaymentProcessingModal from "../../components/UI/ConferencePaymentModal";
 import ReactSelect, { components as ReactSelectComponents } from "react-select";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { Country } from "../../types/_all";
 import countryData from "../../data.json";
 import axios from "../../config/axios";
 import MsFormShell from "../../components/conference/MsFormShell";
 import FormQuestionCard from "../../components/conference/FormQuestionCard";
+import {
+  buildConferencePayload,
+  buildConferencePayPath,
+  pickConferenceId,
+} from "../../utils/conferencePayload";
 import {
   GENDER_OPTIONS,
   PARTICIPANT_CATEGORY_OPTIONS,
@@ -20,7 +24,9 @@ import {
   PARTICIPATION_MODE_OPTIONS,
   SUB_THEME_OPTIONS,
   HEARD_ABOUT_OPTIONS,
+  YES_NO_OPTIONS,
   countWords,
+  namesMatch,
 } from "../../data/conference2026";
 
 const schema = yup.object({
@@ -35,7 +41,19 @@ const schema = yup.object({
   organization: yup.string().required("Organization/Institution is required"),
   title: yup.string().required("Title/Position is required"),
   locationRegion: yup.string().required("Your location is required"),
-  country: yup.string().required("Country is required"),
+  country: yup
+    .string()
+    .required("Country is required")
+    .when("locationRegion", {
+      is: "International",
+      then: (s) =>
+        s.test(
+          "not-nigeria",
+          "International participants cannot select Nigeria. Please select your country of residence.",
+          (value) => !!value && value !== "Nigeria"
+        ),
+      otherwise: (s) => s,
+    }),
   city: yup.string().required("City is required"),
   participationCategory: yup
     .string()
@@ -69,39 +87,46 @@ const schema = yup.object({
     then: (s) => s.required("Please identify how you heard about this event"),
     otherwise: (s) => s.nullable(),
   }),
-  registrationFee: yup.string().required("Please select a registration fee"),
-  paymentTrxId: yup.string(),
-  paymentTrxRef: yup.string(),
-  lipanId: yup.string(),
+  isLipanMember: yup.string().required("Please indicate if you are a LiPAN member"),
+  lipanId: yup.string().when("isLipanMember", {
+    is: "Yes",
+    then: (s) => s.required("LiPAN membership ID is required"),
+    otherwise: (s) => s.nullable(),
+  }),
 });
 
 type FormValues = yup.InferType<typeof schema>;
 
-async function checkCode(
-  id: string
-): Promise<{ valid: boolean; message: string } | undefined> {
-  const pattern = /^Li\d{4}PAN$/;
-  if (!pattern.test(id)) {
-    return { valid: false, message: "Invalid ID provided." };
-  }
+type MemberCheckStatus =
+  | "idle"
+  | "checking"
+  | "confirmed"
+  | "not_found"
+  | "expired"
+  | "name_mismatch"
+  | "invalid_format"
+  | "error";
 
-  try {
-    await axios.post("/accounts/user/verify-id/", { lipan_id: id });
-    return { valid: true, message: "ID validated successfully." };
-  } catch (err: any) {
-    return {
-      valid: false,
-      message:
-        err?.response?.data?.message ||
-        "Error validating ID. Please try again later.",
-    };
-  }
-}
+type MemberCheck = {
+  status: MemberCheckStatus;
+  message: string;
+};
+
+const LIPAN_ID_PATTERN = /^Li\d{4}PAN$/;
+
+const NAME_MISMATCH_MESSAGE =
+  "The name you entered above does not match your LiPAN membership record. Please insert your first and last name exactly as they appear on your LiPAN membership (rearrangement is allowed).";
+
+const CONFIRMED_MESSAGE = "Yes, we can confirm you are a LiPAN member.";
+const NOT_CONFIRMED_MESSAGE = "We cannot confirm your membership.";
+const EXPIRED_MESSAGE =
+  "We cannot confirm a valid membership. Your LiPAN membership has expired. Please renew your membership, then come back to register.";
 
 const inputClass =
   "w-full rounded-md border border-[#d1d1d1] bg-white px-3 py-2.5 text-sm text-[#242424] outline-none transition focus:border-[#5b5fc7] focus:ring-2 focus:ring-[#5b5fc7]/30 disabled:bg-[#f5f5f5]";
 
 export default function RegistrationPage() {
+  const navigate = useNavigate();
   const {
     register,
     watch,
@@ -109,121 +134,253 @@ export default function RegistrationPage() {
     formState: { errors },
     trigger,
     control,
-    reset,
+    getValues,
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
     mode: "onChange",
     defaultValues: {
       country: "Nigeria",
-      paymentTrxId: "",
-      paymentTrxRef: "",
       lipanId: "",
       abstract: "",
       paperTitle: "",
       thematicArea: "",
       heardAboutOther: "",
+      isLipanMember: "",
     },
   });
 
   const formRef = useRef<HTMLFormElement | null>(null);
-  const selectedFee = watch("registrationFee");
-  const formValues = watch();
-  const selectedCountry = watch("country");
-  const selectedCity = watch("city");
+  const dbNamesRef = useRef<{ first?: string; last?: string; full?: string }>({});
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const selectedCategory = watch("participationCategory");
   const locationRegion = watch("locationRegion");
   const heardAbout = watch("heardAbout");
   const abstractValue = watch("abstract") || "";
+  const isLipanMember = watch("isLipanMember");
+  const firstName = watch("firstName") || "";
+  const lastName = watch("lastName") || "";
+  const lipanIdValue = watch("lipanId") || "";
   const isPresenter =
     selectedCategory === "presenter" || selectedCategory === "co-presenter";
 
-  const [showModal, setShowModal] = useState(false);
   const [countries] = useState<Country[]>(countryData as any);
-  const [code, setCode] = useState("");
-  const [isCheckingCode, setIsCheckingCode] = useState(false);
-  const [result, setResult] = useState<{ valid: boolean; message: string } | null>(
-    null
-  );
+  const [memberCheck, setMemberCheck] = useState<MemberCheck>({
+    status: "idle",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isInternational = locationRegion === "International";
 
-  const handleCheck = async () => {
-    setIsCheckingCode(true);
-    const res = await checkCode(code);
-    setResult(res || null);
-    if (res?.valid) {
-      setValue("lipanId", code);
+  useEffect(() => {
+    if (isInternational && getValues("country") === "Nigeria") {
+      setValue("country", "", { shouldValidate: true });
     }
-    setIsCheckingCode(false);
+    if (locationRegion && !isInternational) {
+      setValue("country", "Nigeria", { shouldValidate: true });
+    }
+  }, [isInternational, locationRegion, getValues, setValue]);
+
+  const applyNameMatch = (statusIfMatch: MemberCheckStatus = "confirmed") => {
+    const db = dbNamesRef.current;
+    if (!db.first && !db.last && !db.full) return statusIfMatch === "confirmed";
+    return namesMatch(firstName, lastName, db.first, db.last, db.full);
   };
 
-  const getFeeOptions = () => {
-    if (!selectedCountry || !selectedCategory || !selectedCity) return [];
-
-    const countryInfo = countries.find((c) => c.name === selectedCountry);
-    const isNigeria = selectedCountry === "Nigeria";
-    const isAfrica = countryInfo?.region === "Africa" && !isNigeria;
-
-    if (isNigeria) {
-      return [
-        { value: "Student – ₦20,000", label: "Student – ₦20,000" },
-        { value: "Member – ₦30,000", label: "Member – ₦30,000" },
-        { value: "Non-Member – ₦40,000", label: "Non-Member – ₦40,000" },
-      ];
-    }
-    if (isAfrica) {
-      return [
-        { value: "Student – $20", label: "Student – $20" },
-        { value: "Regular – $100", label: "Regular – $100" },
-      ];
-    }
-    return [
-      { value: "Student – $20", label: "Student – $20" },
-      { value: "Regular – $150", label: "Regular – $150" },
-    ];
-  };
-
-  let amount = 0;
-  let currency: "NGN" | "USD" = "NGN";
-
-  if (selectedFee) {
-    if (selectedFee.includes("₦")) {
-      currency = "NGN";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
-    } else if (selectedFee.includes("$")) {
-      currency = "USD";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
-    }
-  }
-
-  const paystackConfig = {
-    reference: new Date().getTime().toString(),
-    email: watch("email"),
-    amount: amount * 100,
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-    currency,
-  };
-
-  const onSuccess = (reference: any) => {
-    setValue("paymentTrxId", reference.transaction);
-    setValue("paymentTrxRef", reference.trxref);
-    setShowModal(true);
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  const startPayment = async () => {
-    const isFormValid = await trigger(undefined, { shouldFocus: true });
-    if (!isFormValid) return;
-    if (selectedFee === "Member – ₦30,000" && (!result || !result.valid)) {
+  const verifyMembership = async (rawId: string) => {
+    const id = rawId.trim();
+    if (!id) {
+      setMemberCheck({ status: "idle", message: "" });
+      dbNamesRef.current = {};
       return;
     }
-    initializePayment({ onSuccess, onClose: () => {} });
+
+    if (!LIPAN_ID_PATTERN.test(id)) {
+      dbNamesRef.current = {};
+      setMemberCheck({
+        status: "invalid_format",
+        message: "Invalid ID provided. Log in to your membership portal to retrieve it.",
+      });
+      return;
+    }
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setMemberCheck({
+        status: "error",
+        message:
+          "Please enter your first and last name above first, then we can match them with your LiPAN membership.",
+      });
+      return;
+    }
+
+    setMemberCheck({ status: "checking", message: "Checking membership..." });
+    try {
+      const { data } = await axios.post("/accounts/user/verify-id/", {
+        lipan_id: id,
+      });
+      dbNamesRef.current = {
+        first: data.first_name,
+        last: data.last_name,
+        full: data.full_name,
+      };
+      setValue("lipanId", id);
+
+      if (data.first_name || data.last_name || data.full_name) {
+        if (!namesMatch(firstName, lastName, data.first_name, data.last_name, data.full_name)) {
+          setMemberCheck({ status: "name_mismatch", message: NAME_MISMATCH_MESSAGE });
+          return;
+        }
+      }
+
+      setMemberCheck({
+        status: "confirmed",
+        message: CONFIRMED_MESSAGE,
+      });
+    } catch (err: any) {
+      const payload = err?.response?.data || {};
+      const code = payload.code;
+      dbNamesRef.current = {
+        first: payload.first_name,
+        last: payload.last_name,
+        full: payload.full_name,
+      };
+
+      if (err?.response?.status === 404 || code === "not_found") {
+        setMemberCheck({
+          status: "not_found",
+          message: NOT_CONFIRMED_MESSAGE,
+        });
+        return;
+      }
+
+      if (err?.response?.status === 402 || code === "expired") {
+        if (payload.first_name || payload.last_name || payload.full_name) {
+          if (
+            !namesMatch(
+              firstName,
+              lastName,
+              payload.first_name,
+              payload.last_name,
+              payload.full_name
+            )
+          ) {
+            setMemberCheck({ status: "name_mismatch", message: NAME_MISMATCH_MESSAGE });
+            return;
+          }
+        }
+        setMemberCheck({
+          status: "expired",
+          message: payload.message || EXPIRED_MESSAGE,
+        });
+        return;
+      }
+
+      setMemberCheck({
+        status: "error",
+        message: payload.message || NOT_CONFIRMED_MESSAGE,
+      });
+    }
   };
 
-  const countryOptions = countries.map((country) => ({
-    value: country.name,
-    label: country.name,
-    flag: country.flags.svg,
-  }));
+  useEffect(() => {
+    if (isLipanMember !== "Yes") return;
+    if (memberCheck.status !== "confirmed" && memberCheck.status !== "name_mismatch") {
+      return;
+    }
+    const db = dbNamesRef.current;
+    if (!db.first && !db.last && !db.full) return;
+    const match = applyNameMatch();
+    setMemberCheck((prev) => {
+      if (match && prev.status !== "confirmed") {
+        return { status: "confirmed", message: CONFIRMED_MESSAGE };
+      }
+      if (!match && prev.status !== "name_mismatch") {
+        return { status: "name_mismatch", message: NAME_MISMATCH_MESSAGE };
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstName, lastName, isLipanMember]);
+
+  useEffect(() => {
+    return () => {
+      if (checkTimer.current) clearTimeout(checkTimer.current);
+    };
+  }, []);
+
+  const scheduleVerify = (id: string) => {
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+    checkTimer.current = setTimeout(() => {
+      void verifyMembership(id);
+    }, 600);
+  };
+
+  const submitRegistration = async () => {
+    const isFormValid = await trigger(undefined, { shouldFocus: true });
+    if (!isFormValid) return;
+
+    if (getValues("isLipanMember") === "Yes") {
+      if (memberCheck.status === "expired") {
+        toast.error(EXPIRED_MESSAGE);
+        return;
+      }
+      if (memberCheck.status === "name_mismatch") {
+        toast.error(NAME_MISMATCH_MESSAGE);
+        return;
+      }
+      if (memberCheck.status !== "confirmed") {
+        toast.error("Please enter a valid LiPAN membership ID so we can confirm your membership.");
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      const values = getValues();
+      const confirmedMember = values.isLipanMember === "Yes" && memberCheck.status === "confirmed";
+      const payload = buildConferencePayload(values, {
+        lipanId: confirmedMember ? values.lipanId || "" : "",
+        paymentMethod: "paystack",
+        isConfirmedMember: confirmedMember,
+      });
+
+      const { data } = await axios.post("/conference/register/", {
+        ...payload,
+        conferenceYear: 2026,
+        paymentTrxId: "",
+        paymentTrxRef: "",
+      });
+
+      toast.success(data?.message || "Registration submitted successfully");
+      navigate(
+        buildConferencePayPath({
+          conferenceId: pickConferenceId(data),
+          amount: data?.amount ?? payload.amount,
+          currency: data?.currency || payload.currency,
+          feeLabel: data?.registrationFee || payload.registrationFee,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          thanks: true,
+          emailSent: !!data?.emailSent,
+        })
+      );
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Registration failed. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const countryOptions = countries
+    .filter((country) => !(isInternational && country.name === "Nigeria"))
+    .map((country) => ({
+      value: country.name,
+      label: country.name,
+      flag: country.flags.svg,
+    }));
 
   const CustomOption = (props: any) => (
     <ReactSelectComponents.Option {...props}>
@@ -256,10 +413,31 @@ export default function RegistrationPage() {
       key={value}
       className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 hover:bg-[#f5f5f5]"
     >
-      <Radio value={value} {...register(name as any)} id={`${String(name)}-${value}`} />
+      <input
+        type="radio"
+        value={value}
+        {...register(name as any)}
+        id={`${String(name)}-${value}`}
+        className="h-4 w-4 border-[#c7c7c7] text-[#5b5fc7] focus:ring-[#5b5fc7]"
+      />
       <span className="text-sm text-[#242424]">{label}</span>
     </label>
   );
+
+  const memberQuestionNumber = isPresenter
+    ? heardAbout === "Others"
+      ? 16
+      : 15
+    : heardAbout === "Others"
+      ? 13
+      : 12;
+
+  const memberStatusClass =
+    memberCheck.status === "confirmed"
+      ? "text-green-700"
+      : memberCheck.status === "checking"
+        ? "text-[#5b5fc7]"
+        : "text-[#c4314b]";
 
   return (
     <MsFormShell>
@@ -279,25 +457,11 @@ export default function RegistrationPage() {
         </FormQuestionCard>
 
         <FormQuestionCard number={4} title="Email" error={errors.email?.message}>
-          <input
-            type="email"
-            className={inputClass}
-            placeholder="example@mail.com"
-            {...register("email")}
-          />
+          <input type="email" className={inputClass} placeholder="example@mail.com" {...register("email")} />
         </FormQuestionCard>
 
-        <FormQuestionCard
-          number={5}
-          title="Phone/WhatsApp Number"
-          error={errors.phone?.message}
-        >
-          <input
-            type="tel"
-            className={inputClass}
-            placeholder="+234 ..."
-            {...register("phone")}
-          />
+        <FormQuestionCard number={5} title="Phone/WhatsApp Number" error={errors.phone?.message}>
+          <input type="tel" className={inputClass} placeholder="+234 ..." {...register("phone")} />
         </FormQuestionCard>
 
         <FormQuestionCard
@@ -312,16 +476,8 @@ export default function RegistrationPage() {
           </div>
         </FormQuestionCard>
 
-        <FormQuestionCard
-          number={7}
-          title="Organization/Institution"
-          error={errors.organization?.message}
-        >
-          <input
-            className={inputClass}
-            placeholder="Institution name"
-            {...register("organization")}
-          />
+        <FormQuestionCard number={7} title="Organization/Institution" error={errors.organization?.message}>
+          <input className={inputClass} placeholder="Institution name" {...register("organization")} />
         </FormQuestionCard>
 
         <FormQuestionCard number={8} title="Title/Position" error={errors.title?.message}>
@@ -331,6 +487,7 @@ export default function RegistrationPage() {
         <FormQuestionCard
           number={9}
           title="Your Location"
+          className="relative z-20"
           error={
             errors.locationRegion?.message ||
             errors.country?.message ||
@@ -343,8 +500,8 @@ export default function RegistrationPage() {
             )}
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="relative z-20 mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="relative z-30">
               <Label value="Country" className="mb-1 !text-[#424242]" />
               <Controller
                 name="country"
@@ -357,9 +514,12 @@ export default function RegistrationPage() {
                       Option: CustomOption,
                       SingleValue: CustomSingleValue,
                     }}
-                    placeholder="Select country"
+                    placeholder={
+                      isInternational ? "Select your country" : "Select country"
+                    }
                     isSearchable
-                    isDisabled={!!selectedFee}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
                     classNamePrefix="react-select"
                     styles={{
                       control: (base) => ({
@@ -368,10 +528,12 @@ export default function RegistrationPage() {
                         borderColor: "#d1d1d1",
                         boxShadow: "none",
                       }),
+                      menu: (base) => ({ ...base, zIndex: 80 }),
+                      menuPortal: (base) => ({ ...base, zIndex: 80 }),
                     }}
-                    onChange={(selected) =>
-                      field.onChange(selected ? selected.value : "")
-                    }
+                    onChange={(selected) => {
+                      field.onChange(selected ? selected.value : "");
+                    }}
                     value={
                       countryOptions.find((option) => option.value === field.value) ||
                       null
@@ -384,15 +546,14 @@ export default function RegistrationPage() {
               <Label value="City" className="mb-1 !text-[#424242]" />
               <input
                 className={inputClass}
-                placeholder="City"
-                disabled={!!selectedFee}
+                placeholder={isInternational ? "City of residence" : "City"}
                 {...register("city")}
               />
             </div>
           </div>
-          {locationRegion === "International" && (
+          {isInternational && (
             <p className="mt-2 text-xs text-[#616161]">
-              International participants: select your country and city above.
+              International participants must select a country other than Nigeria.
             </p>
           )}
         </FormQuestionCard>
@@ -444,11 +605,7 @@ export default function RegistrationPage() {
               title="If Presenter, indicate the title of your abstract"
               error={errors.paperTitle?.message}
             >
-              <input
-                className={inputClass}
-                placeholder="Abstract title"
-                {...register("paperTitle")}
-              />
+              <input className={inputClass} placeholder="Abstract title" {...register("paperTitle")} />
             </FormQuestionCard>
 
             <FormQuestionCard
@@ -485,105 +642,102 @@ export default function RegistrationPage() {
             title="If others, please identify"
             error={errors.heardAboutOther?.message}
           >
-            <input
-              className={inputClass}
-              placeholder="Please specify"
-              {...register("heardAboutOther")}
-            />
+            <input className={inputClass} placeholder="Please specify" {...register("heardAboutOther")} />
           </FormQuestionCard>
         )}
 
-        {selectedCountry && selectedCategory && selectedCity && (
-          <FormQuestionCard
-            number={isPresenter ? (heardAbout === "Others" ? 16 : 15) : heardAbout === "Others" ? 13 : 12}
-            title="Registration Fee"
-            error={errors.registrationFee?.message}
+        <FormQuestionCard
+          number={memberQuestionNumber}
+          title="Are you a LiPAN member?"
+          error={errors.isLipanMember?.message || errors.lipanId?.message}
+          hint={
+            <>
+              If yes, we will check your membership ID against the LiPAN database. Your name above must match your membership name.{" "}
+              Want to become a member?{" "}
+              <Link
+                className="font-semibold text-[#5b5fc7] underline"
+                to="/auth/sign-up"
+              >
+                Register here
+              </Link>
+              .
+            </>
+          }
+        >
+          <div className="space-y-1">
+            {YES_NO_OPTIONS.map((option) => radioItem("isLipanMember", option, option))}
+          </div>
+
+          {isLipanMember === "Yes" && (
+            <div className="mt-5 space-y-2">
+              <Label value="LiPAN Membership ID" className="!text-[#424242]" />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Li0001PAN"
+                  value={lipanIdValue}
+                  onChange={(e) => {
+                    const next = e.target.value.trim();
+                    setValue("lipanId", next, { shouldValidate: true });
+                    setMemberCheck({ status: "idle", message: "" });
+                    scheduleVerify(next);
+                  }}
+                  onBlur={(e) => void verifyMembership(e.target.value)}
+                />
+                <Button
+                  onClick={() => void verifyMembership(lipanIdValue)}
+                  color="purple"
+                  disabled={memberCheck.status === "checking"}
+                  isProcessing={memberCheck.status === "checking"}
+                >
+                  Check
+                </Button>
+              </div>
+              {memberCheck.status === "invalid_format" ? (
+                <p className="text-sm font-medium text-[#c4314b]">
+                  Invalid ID provided. Log in to your membership portal here to retrieve it:{" "}
+                  <Link className="font-semibold underline" to="/auth/sign-in">
+                    Sign in
+                  </Link>
+                  .
+                </p>
+              ) : memberCheck.message ? (
+                <p className={`text-sm font-medium ${memberStatusClass}`}>
+                  {memberCheck.message}
+                </p>
+              ) : null}
+              {memberCheck.status === "expired" && (
+                <p className="text-sm text-[#c4314b]">
+                  Please{" "}
+                  <Link className="font-semibold underline" to="/auth/sign-in">
+                    sign in
+                  </Link>{" "}
+                  to renew your membership at My Membership, or start from{" "}
+                  <Link className="font-semibold underline" to="/getting-started">
+                    membership plans
+                  </Link>
+                  , then return to register.
+                </p>
+              )}
+            </div>
+          )}
+        </FormQuestionCard>
+
+        <section className="ms-form-card rounded-xl px-5 py-5 shadow-[0_1.6px_3.6px_rgba(0,0,0,0.13)] sm:px-6 sm:py-6">
+          <Button
+            onClick={submitRegistration}
+            type="button"
+            isProcessing={isSubmitting}
+            disabled={isSubmitting || memberCheck.status === "expired"}
+            className="w-full !bg-[#5b5fc7] hover:!bg-[#4f52c1]"
           >
-            <Select
-              disabled={!!selectedFee}
-              {...register("registrationFee")}
-              className="w-full"
-            >
-              <option value="">Select registration type</option>
-              {getFeeOptions().map((fee) => (
-                <option key={fee.value} value={fee.value}>
-                  {fee.label}
-                </option>
-              ))}
-            </Select>
-
-            {selectedFee === "Member – ₦30,000" && selectedCountry === "Nigeria" && (
-              <div className="mt-5 space-y-2">
-                <Label value="Enter your Membership ID" />
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <TextInput
-                    type="text"
-                    value={code}
-                    placeholder="e.g. Li0001PAN"
-                    onChange={(e) => setCode(e.target.value)}
-                    disabled={isCheckingCode || !!result?.valid}
-                    className="w-full"
-                  />
-                  <Button
-                    onClick={handleCheck}
-                    color="purple"
-                    disabled={isCheckingCode || !!result?.valid}
-                    isProcessing={isCheckingCode}
-                  >
-                    Validate
-                  </Button>
-                </div>
-                {result && (
-                  <p
-                    className={`text-sm ${result.valid ? "text-green-600" : "text-red-500"}`}
-                  >
-                    {result.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {selectedFee && (
-              <div className="mt-6 rounded-lg border border-[#e1e1e1] bg-[#fafafa] p-4">
-                {selectedFee === "Student – ₦20,000" && (
-                  <p className="mb-4 rounded-md border-l-4 border-[#5b5fc7] bg-white p-3 text-sm text-[#424242]">
-                    <span className="font-semibold">Note:</span> You will be
-                    required to provide your student ID on conference entry.
-                  </p>
-                )}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-[#616161]">Registration fee</p>
-                    <p className="text-xl font-bold text-[#5b5fc7]">
-                      {currency} {amount.toLocaleString()}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={startPayment}
-                    type="button"
-                    className="!bg-[#5b5fc7] hover:!bg-[#4f52c1]"
-                  >
-                    <HiOutlineCreditCard className="mr-2 h-5 text-lg" />
-                    Pay & Submit
-                  </Button>
-                </div>
-              </div>
-            )}
-          </FormQuestionCard>
-        )}
+            Submit
+          </Button>
+          <p className="mt-2 text-center text-xs text-[#616161]">
+            Submitting saves your details with payment pending. Your registration fee will be shown on the payment page.
+          </p>
+        </section>
       </form>
-
-      <PaymentProcessingModal
-        isOpen={showModal}
-        transactionData={formValues}
-        lipanId={result?.valid ? code : ""}
-        onClose={() => {
-          reset();
-          setShowModal(false);
-          setResult(null);
-          setCode("");
-        }}
-      />
     </MsFormShell>
   );
 }

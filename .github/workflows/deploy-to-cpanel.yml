@@ -1,44 +1,19 @@
-name: Frontend Deploy to cPanel
+# Auto-deploy to cPanel is DISABLED.
+# Deployment is now: build locally → upload files to cPanel by FTP/File Manager.
+# GitHub is used only as source backup (git push).
+#
+# This workflow is kept inactive so an accidental push to master
+# cannot overwrite members.lipanonline.org.
 
 on:
-  push:
-    branches: [ "master" ]
+  workflow_dispatch:
+    # Manual run only. Do not enable push triggers.
 
 jobs:
-  deploy-to-cpanel:
+  skipped:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout frontend code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "npm"
-
-      - name: Create .env.production
+      - name: Deploy disabled
         run: |
-          echo "${{ secrets.APP_ENV }}" >> .env.production
-
-
-      - name: Install dependencies & build
-        run: |
-          npm install
-          npm run build
-
-      - name: Deploy React build to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.CPANEL_FTP_SERVER }}
-          username: ${{ secrets.CPANEL_FTP_USERNAME }}
-          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
-          protocol: ftps
-          server-dir: ./
-          local-dir: dist/
-
-
-
-
-
+          echo "cPanel deploy from GitHub is disabled."
+          echo "Build locally with npm run build, then upload dist/ to members.lipanonline.org"

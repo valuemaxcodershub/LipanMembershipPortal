@@ -11,6 +11,7 @@ import {
   FiSpeaker,
   FiUser,
   FiUsers,
+  FiCalendar,
 } from "react-icons/fi";
 import { useBreakpoint } from "../hooks/breakpoint";
 import DashboardHeader from "../components/navigation/DashboardHeader";
@@ -55,11 +56,26 @@ function AdminLayout() {
       path: "events",
     },
     {
+      name: "Conference",
+      icon: FiCalendar,
+      dropdown: [
+        {
+          name: "2025 Participants",
+          icon: FiUsers,
+          path: "/admin/conference/participants/2025",
+        },
+        {
+          name: "2026 Participants",
+          icon: FiUsers,
+          path: "/admin/conference/participants/2026",
+        },
+      ],
+    },
+    {
       name: "Notifications & Announcements",
       icon: FiInfo,
       path: "notifications",
-    },
-    {
+    },    {
       name: "Messages",
       icon: FiMail,
       path: "user-reports",

@@ -28,7 +28,25 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
   useEffect(() => {
     const current = pathname.split("/")[2];
     setCurrentPath(current);
+    if (pathname.includes("/conference")) {
+      setOpenDropdowns((prev) =>
+        prev.includes("conference") ? prev : [...prev, "conference"]
+      );
+    }
   }, [pathname]);
+
+  const resolveTo = (path?: string) => {
+    if (!path) return "#";
+    if (path.startsWith("/")) return path;
+    const base = "/" + pathname.split("/").filter(Boolean)[0];
+    return `${base}/${path}`;
+  };
+
+  const isActivePath = (path?: string) => {
+    if (!path) return false;
+    const full = resolveTo(path);
+    return pathname === full || pathname.startsWith(`${full}/`);
+  };
 
   const toggleDropdown = (menu: string) => {
     setOpenDropdowns(
@@ -104,7 +122,12 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
                       <button
                         disabled={link.isDisabled}
                         onClick={() => toggleDropdown(link.name.toLowerCase())}
-                        className={`flex font-semibold rounded-tl-xl rounded-bl-xl w-full items-center justify-start px-4 py-4 ${currentPath === link.name.trim().toLowerCase() ? btnActive : btnHover}  focus:outline-none`}
+                        className={`flex font-semibold rounded-tl-xl rounded-bl-xl w-full items-center justify-start px-4 py-4 ${
+                          link.dropdown?.some((item) => isActivePath(item.path)) ||
+                          currentPath === link.name.trim().toLowerCase()
+                            ? btnActive
+                            : btnHover
+                        }  focus:outline-none`}
                       >
                         <span className="flex items-center">
                           <link.icon size={20} />
@@ -129,8 +152,12 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
                         {link.dropdown?.map((dropLink, index) => (
                           <Link
                             key={index}
-                            to={dropLink.path || "#"}
-                            className="flex items-center px-4 py-2 text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-blue-600 dark:hover:text-blue-600"
+                            to={resolveTo(dropLink.path)}
+                            className={`flex items-center rounded-md px-4 py-2 ${
+                              isActivePath(dropLink.path)
+                                ? "bg-white font-semibold text-blue-600 dark:bg-gray-800"
+                                : "text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-blue-600"
+                            }`}
                           >
                             <dropLink.icon className="mr-2" size={18} />
                             {dropLink.name}
@@ -149,9 +176,17 @@ function DashboardSidebar({ isOpen, links }: SidebarPropType) {
                   >
                     <Link
                       to={
-                        link.isDisabled || isNotAllowed ? "no-access" : link.path || "#"
+                        link.isDisabled || isNotAllowed
+                          ? "no-access"
+                          : resolveTo(link.path)
                       }
-                      className={`flex font-semibold !w-full rounded-tl-xl rounded-bl-xl items-center px-4 py-4 ${link.isDisabled || isNotAllowed ? btnDisabled : currentPath === (link.path?.trim().toLowerCase() ?? "") ? btnActive : btnHover} focus:outline-none`}
+                      className={`flex font-semibold !w-full rounded-tl-xl rounded-bl-xl items-center px-4 py-4 ${
+                        link.isDisabled || isNotAllowed
+                          ? btnDisabled
+                          : isActivePath(link.path)
+                            ? btnActive
+                            : btnHover
+                      } focus:outline-none`}
                     >
                       <link.icon className="mr-3" size={20} />
                       <div className="w-full">

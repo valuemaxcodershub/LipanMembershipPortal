@@ -10,7 +10,7 @@ interface SelectableSectionProps {
   options: SelectableItem[] | string[];
   multiple?: boolean;
   value: string[] | string | boolean| null;
-  renderItem?: (item: SelectableItem | string, isSelected: boolean) => React.ReactNode;
+  renderItem?: (item: SelectableItem, isSelected: boolean) => React.ReactNode;
   onChange: (val: string[] | string | boolean | null) => void;
   allowBooleanToggle?: boolean;
 };
@@ -55,9 +55,9 @@ const SelectableSection = ({
         const hasIcon = (option as SelectableItem).icon;
         return (
           <div onClick={() => handleClick(identifier)} key={idx}>
-            {renderItem ? (
+            {renderItem && isObject ? (
               renderItem(option, isSelected(identifier))
-            ) : (
+            ) : renderItem ? null : (
               <button
                 type="button"
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
