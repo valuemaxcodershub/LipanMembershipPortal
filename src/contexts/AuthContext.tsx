@@ -109,23 +109,28 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     const initializeAuth = async () => {
       const refreshToken = Cookies.get("refresh_token");
 
-      if (refreshToken) {
-        try {
-          // Attempt to refresh token
-          const response = await axios.post("/auth/token/refresh/", {
-            refresh: refreshToken,
-          });
-          console.log("Token refreshed successfully:", response);
-          const { user: userData, access } = response.data;
-          setAuthCookies(userData, { access, refresh: refreshToken });
-          dispatch({ type: "LOAD_USER", payload: userData });
-        } catch (error) {
+      try {
+        if (refreshToken) {
+          try {
+            // Fail fast if API is unreachable so public pages are not stuck loading
+            const response = await axios.post(
+              "/auth/token/refresh/",
+              { refresh: refreshToken },
+              { timeout: 8000 }
+            );
+            console.log("Token refreshed successfully:", response);
+            const { user: userData, access } = response.data;
+            setAuthCookies(userData, { access, refresh: refreshToken });
+            dispatch({ type: "LOAD_USER", payload: userData });
+          } catch (error) {
+            clearAuthCookies();
+          }
+        } else {
           clearAuthCookies();
         }
-      } else {
-        clearAuthCookies();
-      }
+      } finally {
         dispatch({ type: "SET_isLOADING", payload: false });
+      }
     };
 
     initializeAuth();

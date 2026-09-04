@@ -39,16 +39,17 @@ import AdminLoginPage from "./pages/admin/Login";
 import ViewUserPage from "./pages/admin/ViewUser";
 import MembershipCreateEditPage from "./pages/admin/ManageMembership";
 import { useAuth } from "./hooks/auth";
-import Cookies from "js-cookie";
 import AdminEventUsersPage from "./pages/admin/EventsUsers";
 import NotAccessPage from "./pages/members/NoAccess";
 import AdminBenefitsListPage from "./pages/admin/MembershipBenefits";
 import AdminProfileSettingsPage from "./pages/admin/Profile";
+import ConferenceParticipantsPage from "./pages/admin/ConferenceParticipants";
 import ConferenceRegister from "./pages/main/ConferenceRegister";
 import MainLayout from "./layouts/MainLayout";
 import RegistrationSuccess from "./pages/main/ConferenceRegistrationSuccess";
 import TeacherRegistrationPage from "./pages/main/TeacherConferenceRegister";
 import ConferenceLayout from "./layouts/ConferenceLayout";
+import ConferencePayPage from "./pages/main/ConferencePay";
 import RegisteredParticipantsPage from "./pages/admin/conferences/RegisteredParticipants";
 import CertificateAdminPage from "./pages/admin/conferences/ConfCertificate";
 
@@ -62,6 +63,12 @@ function AppRoutes() {
       setShowLoader(false);
     }
   }, [isLoading]);
+
+  // Safety net: never block the whole app if auth init hangs
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowLoader(false), 10000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -85,6 +92,7 @@ function AppRoutes() {
       <Route path="/conference" element={<ConferenceLayout />}>
         <Route path="register" element={<ConferenceRegister />} />
         <Route path="teacher-register" element={<TeacherRegistrationPage />} />
+        <Route path="pay" element={<ConferencePayPage />} />
       </Route>
       <Route
         path="/conference/register/success"
@@ -151,6 +159,18 @@ function AppRoutes() {
         <Route path="manage-users" element={<UserManagementPage />} />
         <Route path="manage-users/:id/:type/view" element={<ViewUserPage />} />
         <Route path="events" element={<AdminEventsPage />} />
+        <Route
+          path="conference/participants"
+          element={<Navigate to="/admin/conference/participants/2026" replace />}
+        />
+        <Route
+          path="conference/participants/:year"
+          element={<ConferenceParticipantsPage />}
+        />
+        <Route
+          path="conference-participants"
+          element={<Navigate to="/admin/conference/participants/2026" replace />}
+        />
         <Route
           path="/admin/events/:title/:id/users"
           element={<AdminEventUsersPage />}

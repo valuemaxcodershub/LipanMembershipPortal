@@ -219,8 +219,6 @@ const UserManagementPage = () => {
     try {
       setLoading(true);
       setError("");
-      setTotalPages(0);
-      setUsers([]);
       const [membershipResponse, usersResponse] = await Promise.all([
         axios.get(`/membership/`),
         axios.get("/accounts/users/", {
@@ -238,16 +236,30 @@ const UserManagementPage = () => {
 
       const membershipData = membershipResponse.data;
       const userData = usersResponse.data;
-      const map = membershipData.results.reduce((acc: any, obj: any) => {
+      const membershipRows = Array.isArray(membershipData?.results)
+        ? membershipData.results
+        : Array.isArray(membershipData)
+          ? membershipData
+          : [];
+      const map = membershipRows.reduce((acc: any, obj: any) => {
         acc[`${obj.id}`] = obj.name;
         return acc;
       }, {});
-      console.log(userData, membershipData);
+      const rows = Array.isArray(userData?.results) ? userData.results : [];
+      const pages = Number(userData?.total_pages) || 0;
       setMembershipMap(map);
-      setMembership(membershipData.results);
-      setTotalPages(userData.total_pages);
-      setUsers(userData.results);
-    } catch (err) {
+      setMembership(membershipRows);
+      setTotalPages(pages);
+      setUsers(rows);
+      if (pages > 0 && page > pages) {
+        updateParams({ page: String(pages) });
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 404 && page > 1) {
+        updateParams({ page: "1" });
+        return;
+      }
+      setUsers([]);
       setError("Failed to load users. Please try again.");
     } finally {
       setLoading(false);
@@ -344,9 +356,15 @@ const UserManagementPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
-          User Management
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
+            User Management
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Account status is whether they can log in. Membership plan is the
+            paid LiPAN plan, if any.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <Tooltip content="Refresh" placement="right">
             <Button
@@ -477,11 +495,9 @@ const UserManagementPage = () => {
             <Table.HeadCell>Member-Id</Table.HeadCell>
             <Table.HeadCell>Type</Table.HeadCell>
             {user_type === "users" && (
-              <Table.HeadCell>Membership</Table.HeadCell>
+              <Table.HeadCell>Membership plan</Table.HeadCell>
             )}
-            <Table.HeadCell>Status</Table.HeadCell>
-            <Table.HeadCell>State</Table.HeadCell>
-            <Table.HeadCell>LGA</Table.HeadCell>
+            <Table.HeadCell>Account</Table.HeadCell>
             <Table.HeadCell>Actions</Table.HeadCell>
           </Table.Head>
           <Table.Body>
@@ -533,9 +549,9 @@ const UserManagementPage = () => {
                           ? `${import.meta.env.VITE_API_URL + user.profile_pic}`
                           : undefined
                       }
-                      placeholderInitials={
-                        user?.first_name ? getInitails(user?.first_name) : "- -"
-                      }
+                      placeholderInitials={getInitails(
+                        user?.full_name || `${(user as any)?.first_name || ""} ${(user as any)?.last_name || ""}`
+                      )}
                       size="sm"
                       bordered
                       statusPosition="bottom-right"
@@ -566,8 +582,15 @@ const UserManagementPage = () => {
                   </Table.Cell>
                   {user_type === "users" && (
                     <Table.Cell>
-                      <Badge className="w-fit mx-auto" color="purple">
-                        {membershipMap[`${user.membership_type}`] || "N/A"}
+                      <Badge
+                        className="w-fit mx-auto"
+                        color={
+                          membershipMap?.[`${user.membership_type}`]
+                            ? "purple"
+                            : "gray"
+                        }
+                      >
+                        {membershipMap?.[`${user.membership_type}`] || "No plan"}
                       </Badge>
                     </Table.Cell>
                   )}
@@ -576,7 +599,7 @@ const UserManagementPage = () => {
                       className="w-fit mx-auto"
                       color={user.is_active ? "success" : "failure"}
                     >
-                      {user.is_active ? "Active" : "Suspended"}
+                      {user.is_active ? "Can log in" : "Suspended"}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>{user.state || "N/A"}</Table.Cell>
@@ -638,9 +661,10 @@ const UserManagementPage = () => {
       {totalPages > 1 && (
         <div className="flex justify-center pt-4">
           <Pagination
-            currentPage={page}
+            currentPage={Math.min(Math.max(page, 1), totalPages)}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            showIcons
           />
         </div>
       )}

@@ -1,67 +1,53 @@
-import { useRef, useState, useEffect } from "react";
-import {
-  Button,
-  Card,
-  Checkbox,
-  Label,
-  Radio,
-  TextInput,
-  Accordion,
-  Select,
-  Textarea,
-  Datepicker,
-} from "flowbite-react";
-import { FiUser, FiMail, FiPhone, FiGlobe, FiFileText } from "react-icons/fi";
+import { useRef, useState } from "react";
+import { Button } from "flowbite-react";
 import { HiOutlineCreditCard } from "react-icons/hi";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import SelectableSection from "../../components/UI/SelectionCard";
 import { usePaystackPayment } from "react-paystack";
 import PaymentProcessingModal from "../../components/UI/ConferencePaymentModal";
-import NavigationBar from "../../components/UI/MainSiteNav";
-import ReactSelect, { components as ReactSelectComponents } from "react-select";
-import { Country } from "../../types/_all";
-import axios from "axios";
-import countryData from "../../data.json";
-import { usePayment } from "../../hooks/payment";
+import MsFormShell from "../../components/conference/MsFormShell";
+import FormQuestionCard from "../../components/conference/FormQuestionCard";
+import {
+  GENDER_OPTIONS,
+  LOCATION_REGION_OPTIONS,
+  HEARD_ABOUT_OPTIONS,
+} from "../../data/conference2026";
 
-// ----------------------
-// Validation Schema (Yup)
-// ----------------------
 const schema = yup.object({
   firstName: yup.string().required("First name is required"),
   lastName: yup.string().required("Last name is required"),
-  title: yup.string().required("Title/Position is required"),
-  organization: yup.string().required("Organization/Institution is required"),
+  gender: yup.string().required("Gender is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   phone: yup.string().required("Phone/WhatsApp is required"),
-  // participation: yup.string().required("Participation mode is required"),
-  // participationCategory: yup
-  //   .string()
-  //   .required("Participation category is required"),
+  organization: yup.string().required("Organization/Institution is required"),
+  title: yup.string().required("Title/Position is required"),
+  locationRegion: yup.string().required("Your location is required"),
+  city: yup.string().required("City is required"),
+  country: yup.string().required("Country is required"),
+  participation: yup.string().required("Participation mode is required"),
+  heardAbout: yup.string().required("Please tell us how you heard about this event"),
+  heardAboutOther: yup.string().when("heardAbout", {
+    is: "Others",
+    then: (s) => s.required("Please identify how you heard about this event"),
+    otherwise: (s) => s.nullable(),
+  }),
   registrationFee: yup.string(),
-
-  // proposedTransport: yup.string().required("This field is required"),
-  // reserveHotel: yup.string().required("This field is required"),
-  // makeSiteVisits: yup.string().required("This field is required"),
-  // dateOfArrival: yup.string().required("This field is required"),
   paymentTrxId: yup.string(),
   paymentTrxRef: yup.string(),
-  lipanId: yup.string().nullable(),
+  // Kept for API compatibility with existing teacher registration flow
+  participationCategory: yup.string(),
+  categoryOfParticipant: yup.string(),
+  paperTitle: yup.string(),
+  thematicArea: yup.string(),
+  abstract: yup.string(),
+  lipanId: yup.string(),
 });
 
 type FormValues = yup.InferType<typeof schema>;
 
-const presentationTypes = [
-  "Individual/Co-author(s) Presentation",
-  "Poster Presentation",
-  "Workshops",
-  "Panel Presentation",
-  "Special Presentation",
-  "Special Sessions",
-  "Exhibitions",
-];
+const inputClass =
+  "w-full rounded-md border border-[#d1d1d1] bg-white px-3 py-2.5 text-sm text-[#242424] outline-none transition focus:border-[#5b5fc7] focus:ring-2 focus:ring-[#5b5fc7]/30";
 
 export default function TeacherRegistrationPage() {
   const {
@@ -70,112 +56,46 @@ export default function TeacherRegistrationPage() {
     setValue,
     formState: { errors },
     trigger,
-    control,
     reset,
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
     mode: "onChange",
     defaultValues: {
-      // dateOfArrival: new Date().toISOString(),
-      // country: "Nigeria",
+      country: "Nigeria",
+      categoryOfParticipant: "School teacher",
+      participationCategory: "not-presenting",
+      registrationFee: "Teacher - ₦120,000",
       paymentTrxId: "",
       paymentTrxRef: "",
-      registrationFee: "Teacher - ₦120,000",
-      lipanId: "teacher",
+      lipanId: "",
+      abstract: "",
+      paperTitle: "",
+      thematicArea: "",
+      heardAboutOther: "",
     },
   });
   const { processPayment } = usePayment();
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const formValues = watch();
-
-  // const selectedCountry = watch("country");
-  // const selectedCity = watch("city");
-  // const selectedCategory = watch("participationCategory");
-
+  const heardAbout = watch("heardAbout");
   const [showModal, setShowModal] = useState(false);
-  const [countries, setCountries] = useState<Country[]>(countryData as any);
-  // const [code, setCode] = useState("");
-  // const [isCheckingCode, setIsCheckingCode] = useState(false);
 
-  // const [result, setResult] = useState<any>(null);
+  const amount = 120_000;
+  const currency: "NGN" | "USD" = "NGN";
 
-  // const handleCheck = async () => {
-  //   setIsCheckingCode(true);
-  //   const res = await checkCode(code);
-  //   setResult(res);
-  //   setIsCheckingCode(false);
-  // };
-
-  // const getCountries = async () => {
-  //   try {
-  //     const { data } = await axios.get(
-  //       "https://www.apicountries.com/countries"
-  //     );
-  //     console.log(data);
-  //     // setCountries(data.sort((a, b) => a.name.localeCompare(b.name)));
-  //   } catch (err) {
-  //     console.error("Error fetching the country data:", err);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getCountries();
-  // }, []);
-
-  let amount = 120_000;
-  let currency: "NGN" | "USD" = "NGN";
-
-  // Paystack config
   const paystackConfig = {
     reference: new Date().getTime().toString(),
-    email: watch("email"), // replace with actual user email
-    amount: amount * 100, // Paystack expects amount in kobo/cents
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY, // replace with your Paystack public key
-    currency: currency,
-    metadata: {
-      custom_fields: [
-        {
-          display_name: "Purpose",
-          variable_name: "purpose",
-          value: "conference",
-        },
-        {
-          display_name: "Registration Data",
-          variable_name: "registration_data",
-          // value: { ...formValues, lipanId: "teacher" },
-          value: formValues,
-        },
-      ],
-    },
+    email: watch("email"),
+    amount: amount * 100,
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+    currency,
   };
 
-  // const onSuccess = (reference: any) => {
-  //   console.log("Payment successful:", reference);
-  //   setValue("paymentTrxId", reference.transaction);
-  //   setValue("paymentTrxRef", reference.trxref);
-  //   setShowModal(true);
-  // };
-
-  const onSuccess = async (reference: any) => {
-    console.log("Payment successful:", reference);
-    try {
-      await processPayment({
-        // transactionId: reference.transaction,
-        transaction_ref: reference.trxref,
-        // amount: reference.amount,
-        // email: reference.email,
-      });
-      setValue("paymentTrxId", reference.transaction);
-      setValue("paymentTrxRef", reference.trxref);
-      setShowModal(true);
-    } catch (error) {
-      console.error("Payment processing error:", error);
-    }
-  };
-
-  const onClose = () => {
-    console.log("Payment popup closed");
+  const onSuccess = (reference: any) => {
+    setValue("paymentTrxId", reference.transaction);
+    setValue("paymentTrxRef", reference.trxref);
+    setShowModal(true);
   };
 
   const initializePayment = usePaystackPayment(paystackConfig);
@@ -183,268 +103,193 @@ export default function TeacherRegistrationPage() {
   const startPayment = async () => {
     const isFormValid = await trigger(undefined, { shouldFocus: true });
     if (!isFormValid) return;
-    initializePayment({ onSuccess, onClose });
+    initializePayment({ onSuccess, onClose: () => {} });
   };
 
-  const countryOptions = countries.map((country) => ({
-    value: country.name,
-    label: country.name,
-    flag: country.flags.svg,
-  }));
-
-  const CustomOption = (props: any) => (
-    <ReactSelectComponents.Option {...props}>
-      <div className="flex items-center">
-        <img
-          src={props.data.flag}
-          alt={`${props.data.label} flag`}
-          className="w-6 h-4 mr-2 rounded shadow"
-        />
-        {props.data.label}
-      </div>
-    </ReactSelectComponents.Option>
-  );
-
-  const CustomSingleValue = (props: any) => (
-    <ReactSelectComponents.SingleValue {...props}>
-      <div className="flex items-center">
-        <img
-          src={props.data.flag}
-          alt={`${props.data.label} flag`}
-          className="w-6 h-4 mr-2 rounded shadow"
-        />
-        {props.data.label}
-      </div>
-    </ReactSelectComponents.SingleValue>
+  const radioItem = (name: keyof FormValues, value: string, label: string) => (
+    <label
+      key={value}
+      className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 hover:bg-[#f5f5f5]"
+    >
+      <input
+        type="radio"
+        value={value}
+        className="h-4 w-4 accent-[#5b5fc7]"
+        {...register(name as any)}
+      />
+      <span className="text-sm text-[#242424]">{label}</span>
+    </label>
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
-      <header
-        className="w-full text-white px-2 lg:px-0 py-20 pt-36 text-center shadow-md"
-        style={{
-          backgroundImage: "url(/bg-grad.jpg)",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
+    <MsFormShell badge="Teacher Conference Registration">
+      <form
+        ref={formRef}
+        className="space-y-3"
+        onSubmit={(e) => e.preventDefault()}
       >
-        <h1 className="text-2xl lg:text-4xl font-extrabold">
-          Teacher Conference Registration
-        </h1>
-        <p className="mt-3 text-md lg:text-lg font-medium">
-          Pan African Literacy for All Conference 2025 – Join us in shaping
-          Africa’s future
-        </p>
-      </header>
+        <FormQuestionCard number={1} title="First Name" error={errors.firstName?.message}>
+          <input className={inputClass} placeholder="Enter your first name" {...register("firstName")} />
+        </FormQuestionCard>
 
-      <main className="flex-1 container mx-auto px-4 lg:px-24 py-12">
-        <div className="grid grid-cols-1 gap-10 relative">
-          {/* Illustration / Sidebar */}
-          {/* <div className="hidden lg:flex items-start justify-center">
-            <img
-              src="/student-with-diploma.svg"
-              alt="Conference Illustration"
-              className="w-80 h-80 sticky top-[70px]"
+        <FormQuestionCard number={2} title="Last Name" error={errors.lastName?.message}>
+          <input className={inputClass} placeholder="Enter your last name" {...register("lastName")} />
+        </FormQuestionCard>
+
+        <FormQuestionCard number={3} title="Gender" error={errors.gender?.message}>
+          <div className="space-y-1">
+            {GENDER_OPTIONS.map((option) => radioItem("gender", option, option))}
+          </div>
+        </FormQuestionCard>
+
+        <FormQuestionCard number={4} title="Email" error={errors.email?.message}>
+          <input
+            type="email"
+            className={inputClass}
+            placeholder="example@mail.com"
+            {...register("email")}
+          />
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={5}
+          title="Phone/WhatsApp Number"
+          error={errors.phone?.message}
+        >
+          <input
+            type="tel"
+            className={inputClass}
+            placeholder="+234 ..."
+            {...register("phone")}
+          />
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={6}
+          title="Organization/Institution"
+          error={errors.organization?.message}
+        >
+          <input
+            className={inputClass}
+            placeholder="School / institution name"
+            {...register("organization")}
+          />
+        </FormQuestionCard>
+
+        <FormQuestionCard number={7} title="Title/Position" error={errors.title?.message}>
+          <input className={inputClass} placeholder="Your position" {...register("title")} />
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={8}
+          title="Your Location"
+          error={
+            errors.locationRegion?.message ||
+            errors.city?.message ||
+            errors.country?.message
+          }
+        >
+          <div className="space-y-1">
+            {LOCATION_REGION_OPTIONS.map((option) =>
+              radioItem("locationRegion", option, option)
+            )}
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#424242]">
+                Country
+              </label>
+              <input
+                className={inputClass}
+                placeholder="Country"
+                {...register("country")}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#424242]">
+                City
+              </label>
+              <input className={inputClass} placeholder="City" {...register("city")} />
+            </div>
+          </div>
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={9}
+          title="Preferred Mode of Participation"
+          error={errors.participation?.message}
+        >
+          <div className="space-y-1">
+            {radioItem("participation", "physical", "Physical")}
+            {radioItem("participation", "virtual", "Virtual")}
+          </div>
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={10}
+          title="How did you hear about this event?"
+          error={errors.heardAbout?.message}
+        >
+          <div className="space-y-1">
+            {HEARD_ABOUT_OPTIONS.map((option) =>
+              radioItem("heardAbout", option, option)
+            )}
+          </div>
+        </FormQuestionCard>
+
+        {heardAbout === "Others" && (
+          <FormQuestionCard
+            number={11}
+            title="If others, please identify"
+            error={errors.heardAboutOther?.message}
+          >
+            <input
+              className={inputClass}
+              placeholder="Please specify"
+              {...register("heardAboutOther")}
             />
-          </div> */}
-          {/* Form Section */}
-          <Card className="col-span-3 p-0 lg:p-8 shadow-xl m-auto w-full max-w-4xl">
-            <h2 className="text-2xl lg:text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
-              Teacher Registration Form
-            </h2>
+          </FormQuestionCard>
+        )}
 
-            <form ref={formRef} className="space-y-12">
-              {/* Name */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="firstName" value="First Name" />
-                  <TextInput
-                    id="firstName"
-                    placeholder="Enter first name"
-                    icon={FiUser}
-                    {...register("firstName")}
-                    color={errors.firstName ? "failure" : undefined}
-                  />
-                  {errors.firstName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.firstName.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="lastName" value="Last Name" />
-                  <TextInput
-                    id="lastName"
-                    placeholder="Enter last name"
-                    icon={FiUser}
-                    {...register("lastName")}
-                    color={errors.lastName ? "failure" : undefined}
-                  />
-                  {errors.lastName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.lastName.message}
-                    </p>
-                  )}
-                </div>
+        <FormQuestionCard
+          number={heardAbout === "Others" ? 12 : 11}
+          title="Registration Checkout"
+          required={false}
+        >
+          <div className="rounded-lg border border-[#e1e1e1] bg-[#fafafa] p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-[#616161]">
+                  Teacher conference registration fee
+                </p>
+                <p className="text-xl font-bold text-[#5b5fc7]">
+                  {currency} {amount.toLocaleString()}
+                </p>
               </div>
+              <Button
+                onClick={startPayment}
+                type="button"
+                className="!bg-[#5b5fc7] hover:!bg-[#4f52c1]"
+              >
+                <HiOutlineCreditCard className="mr-2 h-5 text-lg" />
+                Pay & Submit
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-[#616161]">
+              Please confirm your details before proceeding with payment.
+            </p>
+          </div>
+        </FormQuestionCard>
+      </form>
 
-              {/* Title / Org */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="title" value="Title/Position" />
-                  <TextInput
-                    id="title"
-                    placeholder="Your position"
-                    {...register("title")}
-                    color={errors.title ? "failure" : undefined}
-                  />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm">
-                      {errors.title.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label
-                    htmlFor="organization"
-                    value="Organization/Institution"
-                  />
-                  <TextInput
-                    id="organization"
-                    placeholder="Institution name"
-                    {...register("organization")}
-                    color={errors.organization ? "failure" : undefined}
-                  />
-                  {errors.organization && (
-                    <p className="text-red-500 text-sm">
-                      {errors.organization.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Contact */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="email" value="Email" />
-                  <TextInput
-                    id="email"
-                    type="email"
-                    placeholder="example@mail.com"
-                    icon={FiMail}
-                    color={errors.email ? "failure" : undefined}
-                    {...register("email")}
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="phone" value="Phone/WhatsApp" />
-                  <TextInput
-                    id="phone"
-                    type="tel"
-                    placeholder="+234 ..."
-                    icon={FiPhone}
-                    {...register("phone")}
-                    color={errors.phone ? "failure" : undefined}
-                  />
-                  {errors.phone && (
-                    <p className="text-red-500 text-sm">
-                      {errors.phone.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Participation Mode */}
-              {/* <div>
-                <Label value="Preferred Mode of Participation" />
-                <div className="flex gap-6 mt-2">
-                  <div className="grid grid-cols-2 place-items-center">
-                    <Radio
-                      value="physical"
-                      {...register("participation")}
-                      id="physical"
-                      color={errors.participation ? "failure" : undefined}
-                    />
-                    <Label htmlFor="physical">Physical</Label>
-                  </div>
-                  <div className="grid grid-cols-2 place-items-center">
-                    <Radio
-                      value="virtual"
-                      {...register("participation")}
-                      id="virtual"
-                      color={errors.participation ? "failure" : undefined}
-                    />
-                    <Label htmlFor="virtual">Virtual</Label>
-                  </div>
-                </div>
-                {errors.participation && (
-                  <p className="text-red-500 text-sm">
-                    {errors.participation.message}
-                  </p>
-                )}
-              </div> */}
-
-              {/* Registration Fees */}
-              {/* {selectedCountry && selectedCategory && selectedCity && ( */}
-              <div className="flex justify-center mt-8">
-                <Card className="w-full shadow-lg border rounded-2xl lg:p-6">
-                  {/* Header */}
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                    Registration Checkout
-                  </h2>
-
-                  <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
-                    {/* Fee Row */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-5 justify-start border-b pb-4 w-full lg:w-3/4">
-                      <span className="text-gray-600 text-sm md:text-lg">
-                        Conference Registration Fee:
-                      </span>
-                      <span className="text-blue-600 font-extrabold text-lg md:text-xl">
-                        NGN 120,000
-                      </span>
-                    </div>
-
-                    {/* Pay Button */}
-                    <Button
-                      onClick={startPayment}
-                      gradientDuoTone="purpleToBlue"
-                      size="md"
-                      type="button"
-                      className="w-full lg:w-1/4 flex items-center justify-center gap-2"
-                    >
-                      <HiOutlineCreditCard className="text-lg h-5 mr-2" />
-                      Pay Now
-                    </Button>
-                  </div>
-
-                  {/* Additional Info */}
-
-                  <p className="text-gray-500 text-xs md:text-sm">
-                    Please confirm your payment details before proceeding.
-                  </p>
-                </Card>
-              </div>
-              {/* )} */}
-            </form>
-          </Card>
-        </div>
-
-        <PaymentProcessingModal
-          title={"Payment Successful"}
-          isOpen={showModal}
-          transactionData={formValues}
-          onClose={() => {
-            reset();
-            setShowModal(false);
-          }}
-        />
-      </main>
-    </div>
+      <PaymentProcessingModal
+        isOpen={showModal}
+        transactionData={formValues}
+        onClose={() => {
+          reset();
+          setShowModal(false);
+        }}
+      />
+    </MsFormShell>
   );
 }

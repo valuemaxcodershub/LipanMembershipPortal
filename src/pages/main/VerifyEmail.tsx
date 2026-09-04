@@ -169,7 +169,7 @@ export default function VerifyWithLinkPage() {
         <title>Verify Account</title>
       </PageMeta>
 
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
         <Logo className="bg-blue-600 p-2 h-16 rounded-xl mb-4" />
         <Card className="w-full max-w-md shadow-lg rounded-xl">
           {(status === "waiting" || status === "loading") && (

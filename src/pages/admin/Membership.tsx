@@ -13,6 +13,7 @@ interface Membership {
   name: string;
   description: string;
   price: number;
+  renewal_price?: number;
   benefits: any[];
 }
 
@@ -131,7 +132,15 @@ export default function AdminMembershipsListPage() {
                   {membership.description}
                 </p>
                 <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-200">
-                  ₦{membership.price}
+                  Registration: ₦{Number(membership.price).toLocaleString()}
+                </p>
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                  Renewal: ₦
+                  {Number(
+                    membership.renewal_price != null
+                      ? membership.renewal_price
+                      : membership.price
+                  ).toLocaleString()}
                 </p>
                 <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300 max-h-[200px] overflow-y-auto">
                   {membership.benefits.map((benefit, idx) => (

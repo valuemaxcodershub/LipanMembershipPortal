@@ -11,6 +11,7 @@ import {
   FiSpeaker,
   FiUser,
   FiUsers,
+  FiCalendar,
 } from "react-icons/fi";
 import { useBreakpoint } from "../hooks/breakpoint";
 import DashboardHeader from "../components/navigation/DashboardHeader";
@@ -57,17 +58,17 @@ function AdminLayout() {
     },
     {
       name: "Conference",
-      icon: BiBuilding,
+      icon: FiCalendar,
       dropdown: [
         {
-          name: "Registered Participants",
-          icon: BiUserPlus,
-          path: "conference/participants",
+          name: "2025 Participants",
+          icon: FiUsers,
+          path: "/admin/conference/participants/2025",
         },
         {
-          name: "Certificate Generation",
-          icon: BiSolidCertification,
-          path: "conference/certificates",
+          name: "2026 Participants",
+          icon: FiUsers,
+          path: "/admin/conference/participants/2026",
         },
       ],
     },
@@ -75,8 +76,7 @@ function AdminLayout() {
       name: "Notifications & Announcements",
       icon: FiInfo,
       path: "notifications",
-    },
-    {
+    },    {
       name: "Messages",
       icon: FiMail,
       path: "user-reports",

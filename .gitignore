@@ -1,4 +1,4 @@
-2# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -11,9 +11,29 @@ node_modules
 dist
 dist-ssr
 *.local
-dist
+
+# Environment / secrets
 .env
 .env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+secrets.*
+
+# Database dumps / exports (highly sensitive)
+*.sql
+*.sqlite3
+*.sqlite
+*dump*.json
+datadump*.json
+
+# Local copy of Django API (separate repo) — do not commit into frontend
+api/
+
+# Live cPanel frontend snapshot — do not commit
+members.lipanonline.org/
 
 # Editor directories and files
 .vscode/*

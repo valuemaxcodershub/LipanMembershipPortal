@@ -12,8 +12,12 @@ export function Logo({
   to="/",
 }: LogoPropTypes) {
   return (
-    <Link to={to} className={`h-14 ${className}`}>
-      <img className="h-full" src={src} alt="Logo" />
+    <Link to={to} className={`inline-flex h-14 items-center ${className}`}>
+      <img
+        className="h-full w-auto max-w-full object-contain"
+        src={src}
+        alt="Logo"
+      />
     </Link>
   );
 }

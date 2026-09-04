@@ -10,7 +10,20 @@ import { Transaction } from "../../types/_all";
 import TransactionReceiptModal from "../../components/UI/TransactionModal";
 import axios from "../../config/axios";
 
-const transactions = [
+type InvoiceRow = {
+  id: string;
+  date: string;
+  time: string;
+  amount: string;
+  fee: string;
+  total: string;
+  paymentMethod: string;
+  recipient: string;
+  status: string;
+  authCode: string;
+};
+
+const transactions: InvoiceRow[] = [
   {
     id: "INV-20240401-001",
     date: "2024-04-01",
@@ -39,8 +52,8 @@ const transactions = [
 
 const MyInvoicesPage = () => {
   const [openModal, setOpenModal] = useState(false);
-  const [invoices, setInvoices] = useState<Transaction[]>(transactions);
-  const [selectedInvoice, setSelectedInvoice] = useState<Transaction | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>(transactions);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
 
   const getInvoice = async () => {
     try{
@@ -56,7 +69,7 @@ const MyInvoicesPage = () => {
     getInvoice();
   }, []);
 
-  const openInvoiceModal = (invoice: Transaction) => {
+  const openInvoiceModal = (invoice: InvoiceRow) => {
     setSelectedInvoice(invoice);
     setOpenModal(true);
   };
@@ -151,7 +164,7 @@ const MyInvoicesPage = () => {
       {/* Invoice Receipt Modal */}
       <TransactionReceiptModal
         isOpen={openModal}
-        transaction={selectedInvoice}
+        transaction={selectedInvoice as unknown as Transaction}
         onClose={() => setOpenModal(false)}
       />
     </div>

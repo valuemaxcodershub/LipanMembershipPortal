@@ -25,12 +25,13 @@ export default function FlutterWavePayment({
     customer: {
       email,
       name,
+      phone_number: "",
     },
     customizations: {
       ...defaultCustomizations,
       description: `Payment for ${membershipType} membership`,
     },
-  });
+  }) as FlutterwaveConfig;
 
   const handlePayment = useFlutterwave(config);
 

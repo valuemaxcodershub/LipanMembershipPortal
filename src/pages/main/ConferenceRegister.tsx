@@ -1,84 +1,133 @@
-import { useRef, useState, useEffect } from "react";
-import {
-  Button,
-  Card,
-  Checkbox,
-  Label,
-  Radio,
-  TextInput,
-  Accordion,
-  Select,
-  Textarea,
-  Datepicker,
-} from "flowbite-react";
-import {
-  FiUser,
-  FiMail,
-  FiPhone,
-  FiGlobe,
-  FiFileText,
-  FiSmartphone,
-  FiCreditCard,
-} from "react-icons/fi";
-import { HiOutlineCreditCard } from "react-icons/hi";
+import { useEffect, useRef, useState } from "react";
+import { Button, Label } from "flowbite-react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import SelectableSection from "../../components/UI/SelectionCard";
-import { usePaystackPayment } from "react-paystack";
-import PaymentProcessingModal from "../../components/UI/ConferencePaymentModal";
 import ReactSelect, { components as ReactSelectComponents } from "react-select";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { Country } from "../../types/_all";
 import countryData from "../../data.json";
 import axios from "../../config/axios";
-import { toast } from "react-toastify";
+import MsFormShell from "../../components/conference/MsFormShell";
+import FormQuestionCard from "../../components/conference/FormQuestionCard";
+import {
+  buildConferencePayload,
+  buildConferencePayPath,
+  pickConferenceId,
+} from "../../utils/conferencePayload";
+import {
+  GENDER_OPTIONS,
+  PARTICIPANT_CATEGORY_OPTIONS,
+  LOCATION_REGION_OPTIONS,
+  PARTICIPANT_TYPE_OPTIONS,
+  PARTICIPATION_MODE_OPTIONS,
+  SUB_THEME_OPTIONS,
+  HEARD_ABOUT_OPTIONS,
+  YES_NO_OPTIONS,
+  countWords,
+  namesMatch,
+} from "../../data/conference2026";
 import { usePayment } from "../../hooks/payment";
-import { checkCode } from "../../utils/api/download";
 
-// ----------------------
-// Validation Schema (Yup)
-// ----------------------
 const schema = yup.object({
   firstName: yup.string().required("First name is required"),
   lastName: yup.string().required("Last name is required"),
-  title: yup.string().required("Title/Position is required"),
-  organization: yup.string().required("Organization/Institution is required"),
+  gender: yup.string().required("Gender is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   phone: yup.string().required("Phone/WhatsApp is required"),
-  city: yup.string().required("City of residence is required"),
-  country: yup.string().required("Country is required"),
-  participation: yup.string().required("Participation mode is required"),
+  categoryOfParticipant: yup
+    .string()
+    .required("Category of participant is required"),
+  organization: yup.string().required("Organization/Institution is required"),
+  title: yup.string().required("Title/Position is required"),
+  locationRegion: yup.string().required("Your location is required"),
+  country: yup
+    .string()
+    .required("Country is required")
+    .when("locationRegion", {
+      is: "International",
+      then: (s) =>
+        s.test(
+          "not-nigeria",
+          "International participants cannot select Nigeria. Please select your country of residence.",
+          (value) => !!value && value !== "Nigeria"
+        ),
+      otherwise: (s) => s,
+    }),
+  city: yup.string().required("City is required"),
   participationCategory: yup
     .string()
-    .required("Participation category is required"),
-  registrationFee: yup.string().required("Please select a registration fee"),
-  paperTitle: yup.string().nullable(),
-  thematicArea: yup.string().nullable(),
-  coAuthors: yup.string().nullable(),
-  paymentMethod: yup.string().nullable(),
-  lipanId: yup.string().nullable(),
-  presentationTypes: yup.array().default([]),
-  // proposedTransport: yup.string().required("This field is required"),
-  // reserveHotel: yup.string().required("This field is required"),
-  // makeSiteVisits: yup.string().required("This field is required"),
-  // dateOfArrival: yup.string().required("This field is required"),
-  paymentTrxId: yup.string(),
-  paymentTrxRef: yup.string(),
+    .required("Type of participant is required"),
+  participation: yup.string().required("Participation mode is required"),
+  thematicArea: yup.string().when("participationCategory", {
+    is: (val: string) => val === "presenter" || val === "co-presenter",
+    then: (s) => s.required("Please select a sub-theme"),
+    otherwise: (s) => s.nullable(),
+  }),
+  paperTitle: yup.string().when("participationCategory", {
+    is: (val: string) => val === "presenter" || val === "co-presenter",
+    then: (s) => s.required("Abstract title is required"),
+    otherwise: (s) => s.nullable(),
+  }),
+  abstract: yup.string().when("participationCategory", {
+    is: (val: string) => val === "presenter" || val === "co-presenter",
+    then: (s) =>
+      s
+        .required("Abstract is required")
+        .test(
+          "max-words",
+          "Abstract must not exceed 300 words",
+          (value) => !value || countWords(value) <= 300
+        ),
+    otherwise: (s) => s.nullable(),
+  }),
+  heardAbout: yup.string().required("Please tell us how you heard about this event"),
+  heardAboutOther: yup.string().when("heardAbout", {
+    is: "Others",
+    then: (s) => s.required("Please identify how you heard about this event"),
+    otherwise: (s) => s.nullable(),
+  }),
+  isLipanMember: yup.string().required("Please indicate if you are a LiPAN member"),
+  lipanId: yup.string().when("isLipanMember", {
+    is: "Yes",
+    then: (s) => s.required("LiPAN membership ID is required"),
+    otherwise: (s) => s.nullable(),
+  }),
 });
 
 type FormValues = yup.InferType<typeof schema>;
 
-const presentationTypes = [
-  "Individual/Co-author(s) Presentation",
-  "Poster Presentation",
-  "Workshops",
-  "Panel Presentation",
-  "Special Presentation",
-  "Special Sessions",
-  "Exhibitions",
-];
+type MemberCheckStatus =
+  | "idle"
+  | "checking"
+  | "confirmed"
+  | "not_found"
+  | "expired"
+  | "name_mismatch"
+  | "invalid_format"
+  | "error";
+
+type MemberCheck = {
+  status: MemberCheckStatus;
+  message: string;
+};
+
+const LIPAN_ID_PATTERN = /^Li\d{4}PAN$/;
+
+const NAME_MISMATCH_MESSAGE =
+  "The name you entered above does not match your LiPAN membership record. Please insert your first and last name exactly as they appear on your LiPAN membership (rearrangement is allowed).";
+
+const CONFIRMED_MESSAGE = "Yes, we can confirm you are a LiPAN member.";
+const NOT_CONFIRMED_MESSAGE = "We cannot confirm your membership.";
+const EXPIRED_MESSAGE =
+  "We cannot confirm a valid membership. Your LiPAN membership has expired. Please renew your membership, then come back to register.";
+
+const inputClass =
+  "w-full rounded-md border border-[#d1d1d1] bg-white px-3 py-2.5 text-sm text-[#242424] outline-none transition focus:border-[#5b5fc7] focus:ring-2 focus:ring-[#5b5fc7]/30 disabled:bg-[#f5f5f5]";
 
 export default function RegistrationPage() {
+  const navigate = useNavigate();
   const {
     register,
     watch,
@@ -86,190 +135,255 @@ export default function RegistrationPage() {
     formState: { errors },
     trigger,
     control,
-    reset,
+    getValues,
   } = useForm<FormValues>({
     resolver: yupResolver(schema),
     mode: "onChange",
     defaultValues: {
-      // dateOfArrival: new Date().toISOString(),
       country: "Nigeria",
-      paymentTrxId: "",
-      paymentTrxRef: "",
-      paymentMethod: "",
       lipanId: "",
+      abstract: "",
+      paperTitle: "",
+      thematicArea: "",
+      heardAboutOther: "",
+      isLipanMember: "",
     },
   });
 
   const { processPayment } = usePayment();
 
   const formRef = useRef<HTMLFormElement | null>(null);
-  const selectedFee = watch("registrationFee");
-  const formValues = watch();
+  const dbNamesRef = useRef<{ first?: string; last?: string; full?: string }>({});
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedCountry = watch("country");
-  const selectedCity = watch("city");
   const selectedCategory = watch("participationCategory");
-  const participationMode = watch("participation");
+  const locationRegion = watch("locationRegion");
+  const heardAbout = watch("heardAbout");
+  const abstractValue = watch("abstract") || "";
+  const isLipanMember = watch("isLipanMember");
+  const firstName = watch("firstName") || "";
+  const lastName = watch("lastName") || "";
+  const lipanIdValue = watch("lipanId") || "";
+  const isPresenter =
+    selectedCategory === "presenter" || selectedCategory === "co-presenter";
 
-  const [showModal, setShowModal] = useState(false);
-  const [countries, setCountries] = useState<Country[]>(countryData as any);
-  const [code, setCode] = useState("");
-  const [isCheckingCode, setIsCheckingCode] = useState(false);
+  const [countries] = useState<Country[]>(countryData as any);
+  const [memberCheck, setMemberCheck] = useState<MemberCheck>({
+    status: "idle",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isInternational = locationRegion === "International";
 
-  const [result, setResult] = useState<any>(null);
-
-  const handleCheck = async () => {
-    setIsCheckingCode(true);
-    const res = await checkCode(code);
-    setResult(res);
-    setIsCheckingCode(false);
-  };
-
-  const [selected, setSelected] = useState<string>("");
-
-  const methods = [
-    { label: "Paystack", value: "paystack", icon: <FiSmartphone /> },
-    { label: "Other Methods", value: "other", icon: <FiCreditCard /> },
-  ];
-
-  const handleSelect = (value: string) => {
-    setSelected(value);
-  };
-
-  // const getCountries = async () => {
-  //   try {
-  //     const { data } = await axios.get(
-  //       "https://www.apicountries.com/countries"
-  //     );
-  //     console.log(data);
-  //     // setCountries(data.sort((a, b) => a.name.localeCompare(b.name)));
-  //   } catch (err) {
-  //     console.error("Error fetching the country data:", err);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getCountries();
-  // }, []);
-
-  const getFeeOptions = () => {
-    if (!selectedCountry || !selectedCategory || !selectedCity) return [];
-
-    const countryData = countries.find((c) => c.name === selectedCountry);
-    const isNigeria = selectedCountry === "Nigeria";
-    const isAfrica = countryData?.region === "Africa" && !isNigeria;
-
-    if (isNigeria) {
-      return [
-        { value: "Student – ₦20,000", label: "Student" },
-        { value: "Member – ₦30,000", label: "Member" },
-        { value: "Non-Member – ₦40,000", label: "Non-Member" },
-      ];
-    } else if (isAfrica) {
-      return [
-        { value: "Student – $20", label: "Student" },
-        { value: "Regular – $100", label: "Regular" },
-      ];
-    } else {
-      return [
-        { value: "Student – $20", label: "Student" },
-        { value: "Regular – $150", label: "Regular" },
-      ];
+  useEffect(() => {
+    if (isInternational && getValues("country") === "Nigeria") {
+      setValue("country", "", { shouldValidate: true });
     }
-  };
-
-  let amount = 0;
-  let currency: "NGN" | "USD" = "NGN";
-
-  if (selectedFee) {
-    if (selectedFee.includes("₦")) {
-      currency = "NGN";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
-    } else if (selectedFee.includes("$")) {
-      currency = "USD";
-      amount = parseInt(selectedFee.replace(/[^0-9]/g, ""), 10);
+    if (locationRegion && !isInternational) {
+      setValue("country", "Nigeria", { shouldValidate: true });
     }
-  }
+  }, [isInternational, locationRegion, getValues, setValue]);
 
-  // Paystack config
-  const paystackConfig = {
-    reference: new Date().getTime().toString(),
-    email: watch("email"), // replace with actual user email
-    amount: amount * 100, // Paystack expects amount in kobo/cents
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY, // replace with your Paystack public key
-    currency: currency,
-    metadata: {
-      custom_fields: [
-        {
-          display_name: "Purpose",
-          variable_name: "purpose",
-          value: "conference",
-        },
-        {
-          display_name: "Registration Data",
-          variable_name: "registration_data",
-          value: { ...formValues, lipanId: code || "" },
-        },
-      ],
-    },
+  const applyNameMatch = (statusIfMatch: MemberCheckStatus = "confirmed") => {
+    const db = dbNamesRef.current;
+    if (!db.first && !db.last && !db.full) return statusIfMatch === "confirmed";
+    return namesMatch(firstName, lastName, db.first, db.last, db.full);
   };
 
-  const onSuccess = async (reference: any) => {
-    console.log("Payment successful:", reference);
-    try {
-      await processPayment({
-        // transactionId: reference.transaction,
-        transaction_ref: reference.trxref,
-        // amount: reference.amount,
-        // email: reference.email,
+  const verifyMembership = async (rawId: string) => {
+    const id = rawId.trim();
+    if (!id) {
+      setMemberCheck({ status: "idle", message: "" });
+      dbNamesRef.current = {};
+      return;
+    }
+
+    if (!LIPAN_ID_PATTERN.test(id)) {
+      dbNamesRef.current = {};
+      setMemberCheck({
+        status: "invalid_format",
+        message: "Invalid ID provided. Log in to your membership portal to retrieve it.",
       });
-      setValue("paymentTrxId", reference.transaction);
-      setValue("paymentTrxRef", reference.trxref);
-      setValue("paymentMethod", selected);
-      setValue("lipanId", code || "");
-      setShowModal(true);
-    } catch (error) {
-      console.error("Payment processing error:", error);
+      return;
+    }
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setMemberCheck({
+        status: "error",
+        message:
+          "Please enter your first and last name above first, then we can match them with your LiPAN membership.",
+      });
+      return;
+    }
+
+    setMemberCheck({ status: "checking", message: "Checking membership..." });
+    try {
+      const { data } = await axios.post("/accounts/user/verify-id/", {
+        lipan_id: id,
+      });
+      dbNamesRef.current = {
+        first: data.first_name,
+        last: data.last_name,
+        full: data.full_name,
+      };
+      setValue("lipanId", id);
+
+      if (data.first_name || data.last_name || data.full_name) {
+        if (!namesMatch(firstName, lastName, data.first_name, data.last_name, data.full_name)) {
+          setMemberCheck({ status: "name_mismatch", message: NAME_MISMATCH_MESSAGE });
+          return;
+        }
+      }
+
+      setMemberCheck({
+        status: "confirmed",
+        message: CONFIRMED_MESSAGE,
+      });
+    } catch (err: any) {
+      const payload = err?.response?.data || {};
+      const code = payload.code;
+      dbNamesRef.current = {
+        first: payload.first_name,
+        last: payload.last_name,
+        full: payload.full_name,
+      };
+
+      if (err?.response?.status === 404 || code === "not_found") {
+        setMemberCheck({
+          status: "not_found",
+          message: NOT_CONFIRMED_MESSAGE,
+        });
+        return;
+      }
+
+      if (err?.response?.status === 402 || code === "expired") {
+        if (payload.first_name || payload.last_name || payload.full_name) {
+          if (
+            !namesMatch(
+              firstName,
+              lastName,
+              payload.first_name,
+              payload.last_name,
+              payload.full_name
+            )
+          ) {
+            setMemberCheck({ status: "name_mismatch", message: NAME_MISMATCH_MESSAGE });
+            return;
+          }
+        }
+        setMemberCheck({
+          status: "expired",
+          message: payload.message || EXPIRED_MESSAGE,
+        });
+        return;
+      }
+
+      setMemberCheck({
+        status: "error",
+        message: payload.message || NOT_CONFIRMED_MESSAGE,
+      });
     }
   };
 
-  const onClose = () => {
-    console.log("Payment popup closed");
+  useEffect(() => {
+    if (isLipanMember !== "Yes") return;
+    if (memberCheck.status !== "confirmed" && memberCheck.status !== "name_mismatch") {
+      return;
+    }
+    const db = dbNamesRef.current;
+    if (!db.first && !db.last && !db.full) return;
+    const match = applyNameMatch();
+    setMemberCheck((prev) => {
+      if (match && prev.status !== "confirmed") {
+        return { status: "confirmed", message: CONFIRMED_MESSAGE };
+      }
+      if (!match && prev.status !== "name_mismatch") {
+        return { status: "name_mismatch", message: NAME_MISMATCH_MESSAGE };
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstName, lastName, isLipanMember]);
+
+  useEffect(() => {
+    return () => {
+      if (checkTimer.current) clearTimeout(checkTimer.current);
+    };
+  }, []);
+
+  const scheduleVerify = (id: string) => {
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+    checkTimer.current = setTimeout(() => {
+      void verifyMembership(id);
+    }, 600);
   };
 
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  const startPayment = () => {
-    initializePayment({ onSuccess, onClose });
-  };
-
-  const initializeRegister = async () => {
+  const submitRegistration = async () => {
     const isFormValid = await trigger(undefined, { shouldFocus: true });
     if (!isFormValid) return;
-    if (selectedFee === "Member – ₦30,000" && !code) {
-      toast.error("Please enter and validate your Membership ID.");
-      return;
+
+    if (getValues("isLipanMember") === "Yes") {
+      if (memberCheck.status === "expired") {
+        toast.error(EXPIRED_MESSAGE);
+        return;
+      }
+      if (memberCheck.status === "name_mismatch") {
+        toast.error(NAME_MISMATCH_MESSAGE);
+        return;
+      }
+      if (memberCheck.status !== "confirmed") {
+        toast.error("Please enter a valid LiPAN membership ID so we can confirm your membership.");
+        return;
+      }
     }
-    if (code && !result?.valid) {
-      toast.error("Validate your membership id to continue.");
-      return;
-    }
-    if (selected && selected === "paystack") {
-      startPayment();
-    } else {
-      setValue("paymentTrxId", "N/A");
-      setValue("paymentTrxRef", "N/A");
-      setValue("paymentMethod", selected);
-      setValue("lipanId", code || "");
-      setShowModal(true);
+
+    setIsSubmitting(true);
+    try {
+      const values = getValues();
+      const confirmedMember = values.isLipanMember === "Yes" && memberCheck.status === "confirmed";
+      const payload = buildConferencePayload(values, {
+        lipanId: confirmedMember ? values.lipanId || "" : "",
+        paymentMethod: "paystack",
+        isConfirmedMember: confirmedMember,
+      });
+
+      const { data } = await axios.post("/conference/register/", {
+        ...payload,
+        conferenceYear: 2026,
+        paymentTrxId: "",
+        paymentTrxRef: "",
+      });
+
+      toast.success(data?.message || "Registration submitted successfully");
+      navigate(
+        buildConferencePayPath({
+          conferenceId: pickConferenceId(data),
+          amount: data?.amount ?? payload.amount,
+          currency: data?.currency || payload.currency,
+          feeLabel: data?.registrationFee || payload.registrationFee,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          thanks: true,
+          emailSent: !!data?.emailSent,
+        })
+      );
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Registration failed. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const countryOptions = countries.map((country) => ({
-    value: country.name,
-    label: country.name,
-    flag: country.flags.svg,
-  }));
+  const countryOptions = countries
+    .filter((country) => !(isInternational && country.name === "Nigeria"))
+    .map((country) => ({
+      value: country.name,
+      label: country.name,
+      flag: country.flags.svg,
+    }));
 
   const CustomOption = (props: any) => (
     <ReactSelectComponents.Option {...props}>
@@ -277,7 +391,7 @@ export default function RegistrationPage() {
         <img
           src={props.data.flag}
           alt={`${props.data.label} flag`}
-          className="w-6 h-4 mr-2 rounded shadow"
+          className="mr-2 h-4 w-6 rounded shadow"
         />
         {props.data.label}
       </div>
@@ -290,548 +404,343 @@ export default function RegistrationPage() {
         <img
           src={props.data.flag}
           alt={`${props.data.label} flag`}
-          className="w-6 h-4 mr-2 rounded shadow"
+          className="mr-2 h-4 w-6 rounded shadow"
         />
         {props.data.label}
       </div>
     </ReactSelectComponents.SingleValue>
   );
 
+  const radioItem = (name: keyof FormValues, value: string, label: string) => (
+    <label
+      key={value}
+      className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 hover:bg-[#f5f5f5]"
+    >
+      <input
+        type="radio"
+        value={value}
+        {...register(name as any)}
+        id={`${String(name)}-${value}`}
+        className="h-4 w-4 border-[#c7c7c7] text-[#5b5fc7] focus:ring-[#5b5fc7]"
+      />
+      <span className="text-sm text-[#242424]">{label}</span>
+    </label>
+  );
+
+  const memberQuestionNumber = isPresenter
+    ? heardAbout === "Others"
+      ? 16
+      : 15
+    : heardAbout === "Others"
+      ? 13
+      : 12;
+
+  const memberStatusClass =
+    memberCheck.status === "confirmed"
+      ? "text-green-700"
+      : memberCheck.status === "checking"
+        ? "text-[#5b5fc7]"
+        : "text-[#c4314b]";
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
+    <MsFormShell>
+      <form ref={formRef} className="space-y-3" onSubmit={(e) => e.preventDefault()}>
+        <FormQuestionCard number={1} title="First Name" error={errors.firstName?.message}>
+          <input className={inputClass} placeholder="Enter your first name" {...register("firstName")} />
+        </FormQuestionCard>
 
-      <header
-        className="w-full text-white px-2 lg:px-0 py-20 pt-36 text-center shadow-md"
-        style={{
-          backgroundImage: "url(/bg-grad.jpg)",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <h1 className="text-2xl lg:text-4xl font-extrabold">
-          Conference Registration
-        </h1>
-        <p className="mt-3 text-md lg:text-lg font-medium">
-          Pan African Literacy for All Conference 2025 – Join us in shaping
-          Africa’s future
-        </p>
-      </header>
+        <FormQuestionCard number={2} title="Last Name" error={errors.lastName?.message}>
+          <input className={inputClass} placeholder="Enter your last name" {...register("lastName")} />
+        </FormQuestionCard>
 
-      <main className="flex-1 container mx-auto px-4 lg:px-24 py-12">
-        <div className="grid grid-cols-1 gap-10 relative">
-          {/* Illustration / Sidebar */}
-          {/* <div className="hidden lg:flex items-start justify-center">
-            <img
-              src="/student-with-diploma.svg"
-              alt="Conference Illustration"
-              className="w-80 h-80 sticky top-[70px]"
-            />
-          </div> */}
-          {/* Form Section */}
-          <Card className="col-span-3 p-0 lg:p-8 shadow-xl m-auto w-full max-w-4xl">
-            <h2 className="text-2xl lg:text-4xl font-extrabold mx-auto mb-6 p-3 text-black rounded-xl w-fit">
-              Registration Form
-            </h2>
+        <FormQuestionCard number={3} title="Gender" error={errors.gender?.message}>
+          <div className="space-y-1">
+            {GENDER_OPTIONS.map((option) => radioItem("gender", option, option))}
+          </div>
+        </FormQuestionCard>
 
-            <form ref={formRef} className="space-y-12">
-              {/* Name */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="firstName" value="First Name" />
-                  <TextInput
-                    id="firstName"
-                    placeholder="Enter first name"
-                    icon={FiUser}
-                    {...register("firstName")}
-                    color={errors.firstName ? "failure" : undefined}
-                  />
-                  {errors.firstName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.firstName.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="lastName" value="Last Name" />
-                  <TextInput
-                    id="lastName"
-                    placeholder="Enter last name"
-                    icon={FiUser}
-                    {...register("lastName")}
-                    color={errors.lastName ? "failure" : undefined}
-                  />
-                  {errors.lastName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.lastName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <FormQuestionCard number={4} title="Email" error={errors.email?.message}>
+          <input type="email" className={inputClass} placeholder="example@mail.com" {...register("email")} />
+        </FormQuestionCard>
 
-              {/* Title / Org */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="title" value="Title/Position" />
-                  <TextInput
-                    id="title"
-                    placeholder="Your position"
-                    {...register("title")}
-                    color={errors.title ? "failure" : undefined}
-                  />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm">
-                      {errors.title.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label
-                    htmlFor="organization"
-                    value="Organization/Institution"
-                  />
-                  <TextInput
-                    id="organization"
-                    placeholder="Institution name"
-                    {...register("organization")}
-                    color={errors.organization ? "failure" : undefined}
-                  />
-                  {errors.organization && (
-                    <p className="text-red-500 text-sm">
-                      {errors.organization.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <FormQuestionCard number={5} title="Phone/WhatsApp Number" error={errors.phone?.message}>
+          <input type="tel" className={inputClass} placeholder="+234 ..." {...register("phone")} />
+        </FormQuestionCard>
 
-              {/* Contact */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="email" value="Email" />
-                  <TextInput
-                    id="email"
-                    type="email"
-                    placeholder="example@mail.com"
-                    icon={FiMail}
-                    color={errors.email ? "failure" : undefined}
-                    {...register("email")}
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="phone" value="Phone/WhatsApp" />
-                  <TextInput
-                    id="phone"
-                    type="tel"
-                    placeholder="+234 ..."
-                    icon={FiPhone}
-                    {...register("phone")}
-                    color={errors.phone ? "failure" : undefined}
-                  />
-                  {errors.phone && (
-                    <p className="text-red-500 text-sm">
-                      {errors.phone.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <FormQuestionCard
+          number={6}
+          title="Category of Participant"
+          error={errors.categoryOfParticipant?.message}
+        >
+          <div className="space-y-1">
+            {PARTICIPANT_CATEGORY_OPTIONS.map((option) =>
+              radioItem("categoryOfParticipant", option, option)
+            )}
+          </div>
+        </FormQuestionCard>
 
-              {/* Participation Mode */}
-              <div>
-                <Label value="Preferred Mode of Participation" />
-                <div className="flex gap-6 mt-2">
-                  <div className="grid grid-cols-2 place-items-center">
-                    <Radio
-                      value="physical"
-                      {...register("participation")}
-                      id="physical"
-                      color={errors.participation ? "failure" : undefined}
-                    />
-                    <Label htmlFor="physical">Physical</Label>
-                  </div>
-                  <div className="grid grid-cols-2 place-items-center">
-                    <Radio
-                      value="virtual"
-                      {...register("participation")}
-                      id="virtual"
-                      color={errors.participation ? "failure" : undefined}
-                    />
-                    <Label htmlFor="virtual">Virtual</Label>
-                  </div>
-                </div>
-                {errors.participation && (
-                  <p className="text-red-500 text-sm">
-                    {errors.participation.message}
-                  </p>
-                )}
-              </div>
+        <FormQuestionCard number={7} title="Organization/Institution" error={errors.organization?.message}>
+          <input className={inputClass} placeholder="Institution name" {...register("organization")} />
+        </FormQuestionCard>
 
-              <div>
-                <Label value="Select Your Participation Category" />
-                <div className="mt-2">
-                  <Select
-                    color={errors.participationCategory ? "failure" : undefined}
-                    {...register("participationCategory")}
-                  >
-                    <option value="">Select category</option>
-                    <option value="presenting">Presenting</option>
-                    <option value="not-presenting">Not-Presenting</option>
-                  </Select>
-                  {errors.participationCategory && (
-                    <p className="text-red-500 text-sm">
-                      {errors.participationCategory.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <FormQuestionCard number={8} title="Title/Position" error={errors.title?.message}>
+          <input className={inputClass} placeholder="Your position" {...register("title")} />
+        </FormQuestionCard>
 
-              {/* Paper Title */}
-              {selectedCategory === "presenting" && (
-                <>
-                  <div>
-                    <Label
-                      htmlFor="paperTitle"
-                      value="Title of Paper/Presentation (optional)"
-                    />
-                    <TextInput
-                      id="paperTitle"
-                      placeholder="Enter title"
-                      icon={FiFileText}
-                      {...register("paperTitle")}
-                      color={errors.paperTitle ? "failure" : undefined}
-                    />
-                    {errors.paperTitle && (
-                      <p className="text-red-500 text-sm">
-                        {errors.paperTitle.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label value="Thematic Area (optional)" />
-                      <Textarea
-                        placeholder="Write here..."
-                        {...register("thematicArea")}
-                        required
-                        rows={4}
-                        color={errors.thematicArea ? "failure" : undefined}
-                      />
-                      {errors.thematicArea && (
-                        <p className="text-red-500 text-sm">
-                          {errors.thematicArea.message}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label value="Co-authors (if-any)" />
-                      <Textarea
-                        placeholder="Write here..."
-                        {...register("coAuthors")}
-                        required
-                        rows={4}
-                        color={errors.coAuthors ? "failure" : undefined}
-                      />
-                      {errors.coAuthors && (
-                        <p className="text-red-500 text-sm">
-                          {errors.coAuthors.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label value="Types of presentation" />
-                    <SelectableSection
-                      options={presentationTypes}
-                      multiple
-                      value={watch("presentationTypes") as string[]}
-                      onChange={(val) =>
-                        setValue("presentationTypes", val as string[])
-                      }
-                      renderItem={(item, isSelected) => (
-                        <div className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                          <Checkbox
-                            color="blue"
-                            checked={isSelected}
-                            readOnly
-                          />
-                          <span className="text-sm text-gray-800 dark:text-gray-100">
-                            {item as string}
-                          </span>
-                        </div>
-                      )}
-                    />
-                    {errors.presentationTypes && (
-                      <p className="text-red-500 text-sm">
-                        {errors.presentationTypes.message}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Location */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="country" value="Country" />
-                  <Controller
-                    name="country"
-                    control={control}
-                    render={({ field }) => (
-                      <ReactSelect
-                        {...field}
-                        options={countryOptions}
-                        components={{
-                          Option: CustomOption,
-                          SingleValue: CustomSingleValue,
-                        }}
-                        placeholder="Select country"
-                        isSearchable
-                        classNamePrefix="react-select"
-                        className="text-sm"
-                        isDisabled={!!selectedFee}
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            borderColor: errors.country
-                              ? "#ff0000"
-                              : base.borderColor,
-                            boxShadow: errors.country
-                              ? "0 0 0 1px #ff0000"
-                              : base.boxShadow,
-                            "&:hover": {
-                              borderColor: errors.country
-                                ? "#ff0000"
-                                : base.borderColor,
-                            },
-                          }),
-                        }}
-                        onChange={(selected) =>
-                          field.onChange(selected ? selected.value : "")
-                        }
-                        value={
-                          countryOptions.find(
-                            (option) => option.value === field.value
-                          ) || null
-                        }
-                      />
-                    )}
-                  />
-                  {errors.country && (
-                    <p className="text-red-500 text-sm">
-                      {errors.country.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="city" value="City" />
-                  <TextInput
-                    id="city"
-                    placeholder="City of residence"
-                    {...register("city")}
-                    color={errors.city ? "failure" : undefined}
-                    disabled={!!selectedFee}
-                  />
-                  {errors.city && (
-                    <p className="text-red-500 text-sm">
-                      {errors.city.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Registration Fees */}
-              {selectedCountry && selectedCategory && selectedCity && (
-                <div>
-                  <Label value="Registration Type" />
-                  <Select
-                    disabled={!!selectedFee}
-                    color={errors.registrationFee ? "failure" : undefined}
-                    {...register("registrationFee")}
-                  >
-                    <option value="">Select category</option>
-                    {getFeeOptions().map((fee) => (
-                      <option value={fee.value}>{fee.label}</option>
-                    ))}
-                  </Select>
-                  {errors.registrationFee && (
-                    <p className="text-red-500 text-sm">
-                      {errors.registrationFee.message}
-                    </p>
-                  )}
-
-                  {selectedFee === "Member – ₦30,000" &&
-                    selectedCountry === "Nigeria" && (
-                      <div className="mt-10">
-                        <Label value="Enter your Membership Id" />
-                        <div className="w-full mx-auto rounded-xl border p-2">
-                          <div className="flex flex-col md:flex-row gap-3 lg:gap-5">
-                            <TextInput
-                              id="codeInput"
-                              type="text"
-                              value={code}
-                              placeholder="Enter ID here..."
-                              onChange={(e) => setCode(e.target.value)}
-                              required
-                              disabled={isCheckingCode || result?.valid}
-                              className="rounded-r-none w-full"
-                              color={
-                                result && !result.valid ? "failure" : undefined
-                              }
-                            />
-                            <Button
-                              onClick={handleCheck}
-                              color="blue"
-                              disabled={isCheckingCode || result?.valid}
-                              isProcessing={isCheckingCode}
-                              className=""
-                            >
-                              Validate
-                            </Button>
-                          </div>
-                        </div>
-                        {result && (
-                          <p
-                            className={`${
-                              result.valid ? "text-lime-500" : "text-red-500"
-                            } text-sm`}
-                          >
-                            {result?.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                  <div className="mt-10">
-                    <Label value="Select Payment Method" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {methods.map((method) => {
-                        const isSelected = selected === method.value;
-                        return (
-                          <div
-                            key={method.value}
-                            onClick={() => handleSelect(method.value)}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all
-                ${
-                  isSelected
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
-                          >
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                isSelected
-                                  ? "border-blue-600"
-                                  : "border-gray-400"
-                              }`}
-                            >
-                              {isSelected && (
-                                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl text-blue-500">
-                                {method.icon}
-                              </span>
-                              <span className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                                {method.label}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {selectedFee && selected && (
-                    <div className="flex justify-center mt-8">
-                      <Card className="w-full shadow-lg border rounded-2xl lg:p-6">
-                        {selectedFee === "Student – ₦20,000" && (
-                          <p className="p-2 lg:p-5 rounded-xl border-l-4 border-blue-600 text-sm lg:text-md shadow">
-                            <span className="text-md lg:text-lg font-bold">
-                              Note:
-                            </span>{" "}
-                            You will be required to provide your student ID on
-                            conference entry
-                          </p>
-                        )}
-                        {/* Header */}
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                          Registration Checkout
-                        </h2>
-
-                        <div className="flex flex-col md:flex-row justify-center items-center gap-5 w-full">
-                          {/* Fee Row */}
-                          <div className="flex flex-col md:flex-row md:items-center gap-5 justify-start border-b pb-4 w-full lg:w-3/4">
-                            <span className="text-gray-600 text-sm md:text-lg">
-                              Conference Registration Fee:
-                            </span>
-                            <span className="text-blue-600 font-extrabold text-lg md:text-xl">
-                              {currency} {amount}
-                            </span>
-                          </div>
-
-                          {/* Pay Button */}
-                          <Button
-                            // onClick={initializeRegister}
-                            onClick={() =>
-                              toast.info(
-                                "Sorry Registeration is not avaliable at the moment"
-                              )
-                            }
-                            gradientDuoTone="purpleToBlue"
-                            size="md"
-                            type="button"
-                            className="w-full lg:w-1/4 flex items-center justify-center gap-2"
-                          >
-                            <HiOutlineCreditCard className="text-lg h-5 mr-2" />
-                            {selected === "paystack"
-                              ? "Pay Now"
-                              : "Pay with Other Methods"}
-                          </Button>
-                        </div>
-
-                        {/* Additional Info */}
-
-                        <p className="text-gray-500 text-xs md:text-sm">
-                          Please confirm your payment details before proceeding.
-                        </p>
-                      </Card>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Submit */}
-              {/* <Button
-                type="button"
-                onClick={startPayment}
-                className="w-full mt-6 text-white !bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600"
-              >
-                Proceed
-              </Button> */}
-            </form>
-          </Card>
-        </div>
-
-        <PaymentProcessingModal
-          title={
-            selected === "other"
-              ? "Processing Submission"
-              : "Payment Successful"
+        <FormQuestionCard
+          number={9}
+          title="Your Location"
+          className="relative z-20"
+          error={
+            errors.locationRegion?.message ||
+            errors.country?.message ||
+            errors.city?.message
           }
-          isOpen={showModal}
-          transactionData={formValues}
-          onClose={() => {
-            reset();
-            setShowModal(false);
-          }}
-        />
-      </main>
-    </div>
+        >
+          <div className="space-y-1">
+            {LOCATION_REGION_OPTIONS.map((option) =>
+              radioItem("locationRegion", option, option)
+            )}
+          </div>
+
+          <div className="relative z-20 mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="relative z-30">
+              <Label value="Country" className="mb-1 !text-[#424242]" />
+              <Controller
+                name="country"
+                control={control}
+                render={({ field }) => (
+                  <ReactSelect
+                    {...field}
+                    options={countryOptions}
+                    components={{
+                      Option: CustomOption,
+                      SingleValue: CustomSingleValue,
+                    }}
+                    placeholder={
+                      isInternational ? "Select your country" : "Select country"
+                    }
+                    isSearchable
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: 42,
+                        borderColor: "#d1d1d1",
+                        boxShadow: "none",
+                      }),
+                      menu: (base) => ({ ...base, zIndex: 80 }),
+                      menuPortal: (base) => ({ ...base, zIndex: 80 }),
+                    }}
+                    onChange={(selected) => {
+                      field.onChange(selected ? selected.value : "");
+                    }}
+                    value={
+                      countryOptions.find((option) => option.value === field.value) ||
+                      null
+                    }
+                  />
+                )}
+              />
+            </div>
+            <div>
+              <Label value="City" className="mb-1 !text-[#424242]" />
+              <input
+                className={inputClass}
+                placeholder={isInternational ? "City of residence" : "City"}
+                {...register("city")}
+              />
+            </div>
+          </div>
+          {isInternational && (
+            <p className="mt-2 text-xs text-[#616161]">
+              International participants must select a country other than Nigeria.
+            </p>
+          )}
+        </FormQuestionCard>
+
+        <FormQuestionCard
+          number={10}
+          title="Type of Participant"
+          error={
+            errors.participationCategory?.message || errors.participation?.message
+          }
+        >
+          <div className="space-y-1">
+            {PARTICIPANT_TYPE_OPTIONS.map((option) =>
+              radioItem("participationCategory", option.value, option.label)
+            )}
+          </div>
+
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-semibold text-[#242424]">
+              Preferred Mode of Participation <span className="text-[#c4314b]">*</span>
+            </p>
+            <div className="space-y-1">
+              {PARTICIPATION_MODE_OPTIONS.map((option) =>
+                radioItem("participation", option.value, option.label)
+              )}
+            </div>
+          </div>
+        </FormQuestionCard>
+
+        {isPresenter && (
+          <>
+            <FormQuestionCard
+              number={11}
+              title="If presenter, select sub-theme"
+              error={errors.thematicArea?.message}
+            >
+              <select className={inputClass} {...register("thematicArea")}>
+                <option value="">Select sub-theme</option>
+                {SUB_THEME_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </FormQuestionCard>
+
+            <FormQuestionCard
+              number={12}
+              title="If Presenter, indicate the title of your abstract"
+              error={errors.paperTitle?.message}
+            >
+              <input className={inputClass} placeholder="Abstract title" {...register("paperTitle")} />
+            </FormQuestionCard>
+
+            <FormQuestionCard
+              number={13}
+              title="If you would be presenting, kindly paste your abstract of not more than 300 words"
+              error={errors.abstract?.message}
+              hint={`${countWords(abstractValue)} / 300 words`}
+            >
+              <textarea
+                rows={7}
+                className={`${inputClass} resize-y`}
+                placeholder="Paste your abstract here..."
+                {...register("abstract")}
+              />
+            </FormQuestionCard>
+          </>
+        )}
+
+        <FormQuestionCard
+          number={isPresenter ? 14 : 11}
+          title="How did you hear about this event?"
+          error={errors.heardAbout?.message}
+        >
+          <div className="space-y-1">
+            {HEARD_ABOUT_OPTIONS.map((option) =>
+              radioItem("heardAbout", option, option)
+            )}
+          </div>
+        </FormQuestionCard>
+
+        {heardAbout === "Others" && (
+          <FormQuestionCard
+            number={isPresenter ? 15 : 12}
+            title="If others, please identify"
+            error={errors.heardAboutOther?.message}
+          >
+            <input className={inputClass} placeholder="Please specify" {...register("heardAboutOther")} />
+          </FormQuestionCard>
+        )}
+
+        <FormQuestionCard
+          number={memberQuestionNumber}
+          title="Are you a LiPAN member?"
+          error={errors.isLipanMember?.message || errors.lipanId?.message}
+          hint={
+            <>
+              If yes, we will check your membership ID against the LiPAN database. Your name above must match your membership name.{" "}
+              Want to become a member?{" "}
+              <Link
+                className="font-semibold text-[#5b5fc7] underline"
+                to="/auth/sign-up"
+              >
+                Register here
+              </Link>
+              .
+            </>
+          }
+        >
+          <div className="space-y-1">
+            {YES_NO_OPTIONS.map((option) => radioItem("isLipanMember", option, option))}
+          </div>
+
+          {isLipanMember === "Yes" && (
+            <div className="mt-5 space-y-2">
+              <Label value="LiPAN Membership ID" className="!text-[#424242]" />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Li0001PAN"
+                  value={lipanIdValue}
+                  onChange={(e) => {
+                    const next = e.target.value.trim();
+                    setValue("lipanId", next, { shouldValidate: true });
+                    setMemberCheck({ status: "idle", message: "" });
+                    scheduleVerify(next);
+                  }}
+                  onBlur={(e) => void verifyMembership(e.target.value)}
+                />
+                <Button
+                  onClick={() => void verifyMembership(lipanIdValue)}
+                  color="purple"
+                  disabled={memberCheck.status === "checking"}
+                  isProcessing={memberCheck.status === "checking"}
+                >
+                  Check
+                </Button>
+              </div>
+              {memberCheck.status === "invalid_format" ? (
+                <p className="text-sm font-medium text-[#c4314b]">
+                  Invalid ID provided. Log in to your membership portal here to retrieve it:{" "}
+                  <Link className="font-semibold underline" to="/auth/sign-in">
+                    Sign in
+                  </Link>
+                  .
+                </p>
+              ) : memberCheck.message ? (
+                <p className={`text-sm font-medium ${memberStatusClass}`}>
+                  {memberCheck.message}
+                </p>
+              ) : null}
+              {memberCheck.status === "expired" && (
+                <p className="text-sm text-[#c4314b]">
+                  Please{" "}
+                  <Link className="font-semibold underline" to="/auth/sign-in">
+                    sign in
+                  </Link>{" "}
+                  to renew your membership at My Membership, or start from{" "}
+                  <Link className="font-semibold underline" to="/getting-started">
+                    membership plans
+                  </Link>
+                  , then return to register.
+                </p>
+              )}
+            </div>
+          )}
+        </FormQuestionCard>
+
+        <section className="ms-form-card rounded-xl px-5 py-5 shadow-[0_1.6px_3.6px_rgba(0,0,0,0.13)] sm:px-6 sm:py-6">
+          <Button
+            onClick={submitRegistration}
+            type="button"
+            isProcessing={isSubmitting}
+            disabled={isSubmitting || memberCheck.status === "expired"}
+            className="w-full !bg-[#5b5fc7] hover:!bg-[#4f52c1]"
+          >
+            Submit
+          </Button>
+          <p className="mt-2 text-center text-xs text-[#616161]">
+            Submitting saves your details with payment pending. Your registration fee will be shown on the payment page.
+          </p>
+        </section>
+      </form>
+    </MsFormShell>
   );
 }

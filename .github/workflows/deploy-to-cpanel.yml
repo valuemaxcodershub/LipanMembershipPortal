@@ -1,13 +1,17 @@
-name: Frontend Deploy to cPanel
+# Auto-deploy to cPanel is DISABLED.
+# Deployment is now: build locally → upload files to cPanel by FTP/File Manager.
+# GitHub is used only as source backup (git push).
+#
+# This workflow is kept inactive so an accidental push to master
+# cannot overwrite members.lipanonline.org.
 
 on:
   push:
     branches: ["master"]
 
 jobs:
-  deploy-to-cpanel:
+  skipped:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout frontend code
         uses: actions/checkout@v4
