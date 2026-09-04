@@ -74,7 +74,6 @@ export default function TeacherRegistrationPage() {
       heardAboutOther: "",
     },
   });
-  const { processPayment } = usePayment();
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const formValues = watch();
